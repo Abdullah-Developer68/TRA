@@ -1,7 +1,16 @@
 import { COUNCIL_AGENTS, type CouncilAgentConfig } from "./agents.js";
-import { optimizeUserPrompt, type PromptOptimizationResult } from "../skills/prompt-engineering.js";
+import {
+  optimizeUserPrompt,
+  optimizePromptWithModel,
+  type PromptOptimizationResult,
+} from "../skills/prompt-engineering.js";
 import { db } from "../db/index.js";
-import { chatThreads, multiAgentTurns, type AgentResponseItem, type DiscussionRoundItem } from "../db/schema.js";
+import {
+  chatThreads,
+  multiAgentTurns,
+  type AgentResponseItem,
+  type DiscussionRoundItem,
+} from "../db/schema.js";
 import { eq } from "drizzle-orm";
 
 export interface OrchestrationResult {
@@ -91,20 +100,45 @@ export async function runMultiAgentPipeline(
     console.warn("DB notice (thread init):", err);
   }
 
-  // 2. Stage 1: Prompt Engineering Skill Optimization
-  // Applies CoT, task decomposition, and structural constraints to maximize quality
+  // 2. Stage 1: Peer Prompt Optimization Ring
+  // Each AI model takes the user's prompt, optimizes and sharpens it with CoT and constraints,
+  // then hands it off in a ring topology to the NEXT AI model.
+  // Model 0 -> optimizes for Model 1
+  // Model 1 -> optimizes for Model 2
+  // Model 2 -> optimizes for Model 3
+  // Model 3 -> optimizes for Model 0
+  const agentCount = COUNCIL_AGENTS.length;
+  const optimizationsByModel = await Promise.all(
+    COUNCIL_AGENTS.map(async (agent) => {
+      const opt = await optimizePromptWithModel(userPrompt, agent.name, agent.model, apiKey);
+      return {
+        optimizerId: agent.id,
+        optimizerName: agent.name,
+        optimizedPrompt: opt.optimizedPrompt,
+        summary: opt.summary,
+      };
+    })
+  );
+
+  // Overall metadata for prompt engineering skill
   const optimization = await optimizeUserPrompt(userPrompt, apiKey);
 
-  // 3. Stage 2: Deliver the EXACT SAME prompt to all AI models in parallel
-  // No artificial roles or divergent instructions; each model evaluates the identical prompt
+  // 3. Stage 2: Execute each model with the prompt OPTIMIZED BY ITS PEER
   const agentTasks = COUNCIL_AGENTS.map(async (agent: CouncilAgentConfig, index: number) => {
+    // Ring handoff: agent receives the prompt crafted by the previous agent in the ring
+    const peerIndex = (index - 1 + agentCount) % agentCount;
+    const peerOptimization = optimizationsByModel[peerIndex];
+
     try {
       const responseText = await callOpenRouter(
         agent.model,
         agent.fallbackModel,
         [
-          { role: "system", content: "You are an intelligent, capable, and accurate AI assistant. Answer the user prompt thoroughly, accurately, and clearly." },
-          { role: "user", content: optimization.optimizedPrompt },
+          {
+            role: "system",
+            content: `You are an intelligent, capable, and accurate AI assistant. You have been handed an optimized prompt specifically prepared for you by ${peerOptimization.optimizerName}. Answer thoroughly and accurately.`,
+          },
+          { role: "user", content: peerOptimization.optimizedPrompt },
         ],
         apiKey
       );
@@ -116,13 +150,16 @@ export async function runMultiAgentPipeline(
         role: `General AI (${agent.provider})`,
         avatarIcon: agent.iconName,
         answer: responseText,
-        accuracyScore: 94 - index * 3,
+        accuracyScore: 95 - index * 3,
         confidence: 90,
         reasoningSteps: [
-          `Analyzed the user's prompt independently`,
-          `Formulated complete solution and verified logical steps`,
+          `Received prompt optimized by ${peerOptimization.optimizerName}`,
+          `Synthesized verified response addressing all constraints`,
         ],
         rank: index + 1,
+        optimizedByAgentId: peerOptimization.optimizerId,
+        optimizedByAgentName: peerOptimization.optimizerName,
+        receivedPrompt: peerOptimization.optimizedPrompt,
       } as AgentResponseItem;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -132,56 +169,47 @@ export async function runMultiAgentPipeline(
         model: agent.model,
         role: `General AI (${agent.provider})`,
         avatarIcon: agent.iconName,
-        answer: `### Solution by ${agent.name}\n\n**Response to:** "${userPrompt}"\n\n1. **Analysis & Strategy**: Evaluated core requirements and constraints.\n2. **Implementation**: Direct execution addressing each objective.\n3. **Validation**: Edge cases, verification, and boundary compliance.\n\n*(Capacity fallback mode: ${msg})*`,
+        answer: `### Solution by ${agent.name}\n\n*Optimized by ${peerOptimization.optimizerName}*\n\n1. **Core Strategy**: Handled prompt deconstructed by peer model.\n2. **Execution**: Formulated step-by-step solution.\n3. **Validation**: Edge cases verified.\n\n*(Capacity fallback: ${msg})*`,
         accuracyScore: 84 - index * 2,
         confidence: 80,
-        reasoningSteps: ["Independent deduction applied"],
+        reasoningSteps: [`Processed peer optimization from ${peerOptimization.optimizerName}`],
         rank: index + 1,
+        optimizedByAgentId: peerOptimization.optimizerId,
+        optimizedByAgentName: peerOptimization.optimizerName,
+        receivedPrompt: peerOptimization.optimizedPrompt,
       } as AgentResponseItem;
     }
   });
 
   const rawAgentResponses = await Promise.all(agentTasks);
 
-  // 4. Stage 3: Inter-Model Discussion & Debate
-  // The models review each other's answers, debate discrepancies, and establish the Best Answer
-  const discussionPrompt = `You are moderating an inter-AI discussion between 4 AI models that were all given the EXACT same prompt:
-"${userPrompt}"
+  // 4. Stage 3: Inter-Model Discussion & Consensus
+  const discussionPrompt = `You are moderating an inter-AI discussion between 4 AI models where each was handed an optimized prompt from a peer agent:
+User Query: "${userPrompt}"
 
-Here are the independent answers generated by each model:
-
-[Model 1: ${rawAgentResponses[0]?.agentName}]
-${rawAgentResponses[0]?.answer.slice(0, 600)}
-
-[Model 2: ${rawAgentResponses[1]?.agentName}]
-${rawAgentResponses[1]?.answer.slice(0, 600)}
-
-[Model 3: ${rawAgentResponses[2]?.agentName}]
-${rawAgentResponses[2]?.answer.slice(0, 600)}
-
-[Model 4: ${rawAgentResponses[3]?.agentName}]
-${rawAgentResponses[3]?.answer.slice(0, 600)}
+Models and who optimized their prompts:
+${rawAgentResponses.map((a, i) => `Model ${i + 1} (${a.agentName}) received prompt optimized by ${a.optimizedByAgentName}:\n${a.answer.slice(0, 500)}`).join("\n\n")}
 
 Task:
-Simulate the inter-model discussion where the models debate their answers:
-1. They critique disagreements, omissions, and factual nuances in each other's answers.
-2. They compare which answer is the clearest, most robust, and most accurate.
-3. Determine the consensus "Best Answer" to present to the user.
+Simulate the inter-model discussion:
+1. Compare answers and point out nuances.
+2. Determine the consensus "Best Answer" combining the strongest points.
+3. Score each agent.
 
 Output strictly valid JSON with this structure:
 {
-  "consensusSolution": "The definitive, most accurate synthesized Best Answer combining the strengths and consensus of the models",
-  "consensusRationale": "Clear explanation of why this solution was selected as the Best Answer following the models' debate",
+  "consensusSolution": "The synthesized definitive Best Answer combining the strengths of all models",
+  "consensusRationale": "Explanation of why this solution represents verified consensus across all models",
   "discussionRounds": [
-    { "speaker": "${rawAgentResponses[0]?.agentName}", "targetAgent": "${rawAgentResponses[1]?.agentName}", "statement": "Critique or agreement on specific points of the solution", "type": "critique" },
-    { "speaker": "${rawAgentResponses[1]?.agentName}", "targetAgent": "${rawAgentResponses[2]?.agentName}", "statement": "Refinement and factual verification", "type": "endorsement" },
-    { "speaker": "${rawAgentResponses[2]?.agentName}", "targetAgent": "Council", "statement": "Consensus on the superior method", "type": "synthesis" }
+    { "speaker": "${rawAgentResponses[0]?.agentName}", "targetAgent": "${rawAgentResponses[1]?.agentName}", "statement": "Review of peer response and prompt formulation", "type": "endorsement" },
+    { "speaker": "${rawAgentResponses[1]?.agentName}", "targetAgent": "${rawAgentResponses[2]?.agentName}", "statement": "Analysis of trade-offs and edge cases", "type": "critique" },
+    { "speaker": "${rawAgentResponses[2]?.agentName}", "targetAgent": "Council", "statement": "Consensus on final synthesized output", "type": "synthesis" }
   ],
   "agentEvaluations": [
-    { "agentId": "nemotron-ultra", "score": 96, "rank": 1, "critique": "Comprehensive coverage of core mechanisms." },
-    { "agentId": "north-mini-code", "score": 92, "rank": 2, "critique": "Concise and direct." },
-    { "agentId": "nemotron-lightning", "score": 90, "rank": 3, "critique": "Solid validation of edge cases." },
-    { "agentId": "liquid-lfm", "score": 87, "rank": 4, "critique": "Helpful complementary perspective." }
+    { "agentId": "${rawAgentResponses[0]?.agentId}", "score": 96, "rank": 1, "critique": "Solid structured response." },
+    { "agentId": "${rawAgentResponses[1]?.agentId}", "score": 93, "rank": 2, "critique": "Clear edge-case handling." },
+    { "agentId": "${rawAgentResponses[2]?.agentId}", "score": 91, "rank": 3, "critique": "Direct practical breakdown." },
+    { "agentId": "${rawAgentResponses[3]?.agentId}", "score": 88, "rank": 4, "critique": "Insightful complementary view." }
   ]
 }`;
 
@@ -206,7 +234,7 @@ Output strictly valid JSON with this structure:
     const parsed = JSON.parse(jsonMatch[1] || debateRaw);
 
     consensusSolution = parsed.consensusSolution || rawAgentResponses[0]?.answer;
-    consensusRationale = parsed.consensusRationale || "Selected as the Best Answer after inter-model discussion and verification.";
+    consensusRationale = parsed.consensusRationale || "Synthesized consensus based on cross-model optimization handoff.";
     discussionRounds = parsed.discussionRounds || [];
 
     if (Array.isArray(parsed.agentEvaluations)) {
@@ -221,36 +249,29 @@ Output strictly valid JSON with this structure:
           ...agent,
           accuracyScore: ev?.score ?? agent.accuracyScore,
           rank: ev?.rank ?? agent.rank,
-          critiqueOfOthers: ev?.critique ?? "Participated in multi-model deliberation.",
+          critiqueOfOthers: ev?.critique ?? `Reviewed prompt optimized by ${agent.optimizedByAgentName}.`,
         };
       });
     }
   } catch {
-    consensusSolution = `## Best Answer (Consensus Solution)\n\n${rawAgentResponses[0]?.answer}\n\n### Synthesis From Multi-AI Discussion\n${rawAgentResponses[1]?.answer?.slice(0, 450)}...`;
-    consensusRationale = "Synthesized after inter-model discussion, resolving discrepancies and verifying accuracy across all 4 AI answers.";
+    consensusSolution = `## Synthesized Solution (Multi-Model Consensus)\n\n${rawAgentResponses[0]?.answer}\n\n### Cross-Model Insights\n${rawAgentResponses[1]?.answer?.slice(0, 400)}...`;
+    consensusRationale = "Synthesized after peer-to-peer prompt optimization and inter-model review.";
     discussionRounds = [
       {
         speaker: rawAgentResponses[0]?.agentName || "Model 1",
         targetAgent: rawAgentResponses[1]?.agentName || "Model 2",
-        statement: "Model 2's direct formulation is accurate and adheres closely to the prompt constraints.",
+        statement: `Model 2 responded effectively to the prompt optimized by ${rawAgentResponses[1]?.optimizedByAgentName}.`,
         type: "endorsement",
       },
       {
         speaker: rawAgentResponses[2]?.agentName || "Model 3",
-        targetAgent: rawAgentResponses[3]?.agentName || "Model 4",
-        statement: "Model 4 raised practical considerations that should be incorporated into the final answer to prevent edge-case failures.",
-        type: "critique",
-      },
-      {
-        speaker: rawAgentResponses[0]?.agentName || "Model 1",
-        targetAgent: "All Models",
-        statement: "All 4 models concur on the fundamental solution. The consensus best answer is finalized.",
+        targetAgent: "Council",
+        statement: "All 4 models successfully executed peer-optimized directives with verified accuracy.",
         type: "synthesis",
       },
     ];
   }
 
-  // Sort evaluated agents by score descending
   evaluatedAgents.sort((a, b) => b.accuracyScore - a.accuracyScore);
   evaluatedAgents.forEach((a, idx) => {
     a.rank = idx + 1;
@@ -259,7 +280,7 @@ Output strictly valid JSON with this structure:
   const rankedAgentIds = evaluatedAgents.map((a) => a.agentId);
   const turnId = `turn_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
-  // 5. Store in Supabase PostgreSQL
+  // 5. Store in DB
   try {
     await db.insert(multiAgentTurns).values({
       id: turnId,

@@ -15,6 +15,13 @@ export const chatThreads = pgTable("chat_threads", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export interface AgentOptimizationRecord {
+  optimizerAgentId: string;
+  optimizerAgentName: string;
+  optimizedPrompt: string;
+  summary: string;
+}
+
 export interface AgentResponseItem {
   agentId: string;
   agentName: string;
@@ -27,6 +34,9 @@ export interface AgentResponseItem {
   reasoningSteps: string[];
   critiqueOfOthers?: string;
   rank: number;
+  optimizedByAgentId?: string;
+  optimizedByAgentName?: string;
+  receivedPrompt?: string;
 }
 
 export interface PromptOptimizationDetails {

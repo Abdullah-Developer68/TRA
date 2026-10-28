@@ -19,7 +19,7 @@ class ChatState {
   final PipelineStage activeStage;
   final String stageMessage;
   final String? error;
-  final Map<String, String> activeViews; // turnId -> active view ('consensus', agentId, 'debate')
+  final Map<String, String> activeViews; // turnId -> active view ('consensus', 'all_models', agentId, 'debate')
 
   ChatState({
     required this.turns,
@@ -122,7 +122,7 @@ class ChatNotifier extends Notifier<ChatState> {
     final currentThread = state.activeThreadId;
     state = state.copyWith(
       activeStage: PipelineStage.optimizing,
-      stageMessage: 'Applying Prompt Engineering Skill (System Framing, CoT, Guardrails)...',
+      stageMessage: 'Models sharpening each other\'s prompts...',
       error: null,
     );
 
@@ -130,7 +130,7 @@ class ChatNotifier extends Notifier<ChatState> {
       if (state.activeStage == PipelineStage.optimizing) {
         state = state.copyWith(
           activeStage: PipelineStage.queryingAgents,
-          stageMessage: 'Consulting 4 Free AI Models (Nemotron Ultra, North Code, Lightning, Liquid LFM)...',
+          stageMessage: 'Executing peer-crafted directives across 4 models...',
         );
       }
     });
@@ -139,7 +139,7 @@ class ChatNotifier extends Notifier<ChatState> {
       if (state.activeStage == PipelineStage.queryingAgents) {
         state = state.copyWith(
           activeStage: PipelineStage.interAgentDebate,
-          stageMessage: 'Agents conducting inter-agent critique, cross-examination & scoring...',
+          stageMessage: 'Cross-model debate, examination & scoring...',
         );
       }
     });
@@ -148,7 +148,7 @@ class ChatNotifier extends Notifier<ChatState> {
       if (state.activeStage == PipelineStage.interAgentDebate) {
         state = state.copyWith(
           activeStage: PipelineStage.synthesizing,
-          stageMessage: 'Synthesizing verified Rank 1 Consensus Solution...',
+          stageMessage: 'Synthesizing verified consensus answer...',
         );
       }
     });
@@ -161,7 +161,7 @@ class ChatNotifier extends Notifier<ChatState> {
 
       final updatedTurns = [...state.turns, turn];
       final updatedViews = Map<String, String>.from(state.activeViews);
-      updatedViews[turn.turnId] = 'consensus'; // Default to Rank 1 (Most accurate)
+      updatedViews[turn.turnId] = 'consensus'; // Default to consensus best answer
 
       state = state.copyWith(
         turns: updatedTurns,

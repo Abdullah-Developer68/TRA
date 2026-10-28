@@ -10,6 +10,9 @@ class AgentResponseItem {
   final List<String> reasoningSteps;
   final String? critiqueOfOthers;
   final int rank;
+  final String? optimizedByAgentId;
+  final String? optimizedByAgentName;
+  final String? receivedPrompt;
 
   AgentResponseItem({
     required this.agentId,
@@ -23,6 +26,9 @@ class AgentResponseItem {
     required this.reasoningSteps,
     this.critiqueOfOthers,
     required this.rank,
+    this.optimizedByAgentId,
+    this.optimizedByAgentName,
+    this.receivedPrompt,
   });
 
   factory AgentResponseItem.fromJson(Map<String, dynamic> json) {
@@ -41,6 +47,9 @@ class AgentResponseItem {
           [],
       critiqueOfOthers: json['critiqueOfOthers'] as String?,
       rank: (json['rank'] as num?)?.toInt() ?? 1,
+      optimizedByAgentId: json['optimizedByAgentId'] as String?,
+      optimizedByAgentName: json['optimizedByAgentName'] as String?,
+      receivedPrompt: json['receivedPrompt'] as String?,
     );
   }
 }
@@ -136,10 +145,10 @@ class MultiAgentTurn {
           : PromptOptimizationDetails(
               originalPrompt: json['user_prompt'] as String? ?? '',
               optimizedPrompt: json['optimized_prompt'] as String? ?? '',
-              appliedTechniques: ['Prompt Engineering Skill'],
-              intentSummary: 'Synthesized query',
+              appliedTechniques: ['Peer Prompt Optimization'],
+              intentSummary: 'Cross-agent optimized query',
               constraintsAdded: [],
-              reasoningFramework: 'Chain-of-Thought',
+              reasoningFramework: 'Peer-to-Peer Ring Optimization',
             ),
       consensusSolution: json['consensusSolution'] as String? ?? json['consensus_solution'] as String? ?? '',
       consensusRationale: json['consensusRationale'] as String? ?? json['consensus_rationale'] as String? ?? '',

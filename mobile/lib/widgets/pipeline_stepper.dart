@@ -19,7 +19,7 @@ class PipelineStepper extends StatelessWidget {
   });
 
   static const _steps = <_Step>[
-    _Step('Prepare', LucideIcons.wand),
+    _Step('Peer Opt', LucideIcons.wand),
     _Step('Query', LucideIcons.radio),
     _Step('Debate', LucideIcons.messagesSquare),
     _Step('Synthesize', LucideIcons.sparkles),
@@ -63,12 +63,12 @@ class PipelineStepper extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              Expanded(
+              const Expanded(
                 child: Text(
                   'COUNCIL IN SESSION',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppTheme.textMuted,
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
@@ -142,13 +142,13 @@ class PipelineStepper extends StatelessWidget {
   String _stageLabel(PipelineStage stage) {
     switch (stage) {
       case PipelineStage.optimizing:
-        return 'Optimizing your prompt';
+        return 'Peer Optimization';
       case PipelineStage.queryingAgents:
-        return 'Asking 4 models';
+        return 'Querying 4 Models';
       case PipelineStage.interAgentDebate:
-        return 'Models are debating';
+        return 'Debate & Critique';
       case PipelineStage.synthesizing:
-        return 'Selecting the best answer';
+        return 'Consensus Synthesis';
       case PipelineStage.complete:
         return 'Completed';
       case PipelineStage.idle:
@@ -200,8 +200,8 @@ class _StepSegment extends StatelessWidget {
         Row(
           children: [
             Icon(isDone ? LucideIcons.check : step.icon,
-                size: 12, color: accent),
-            const SizedBox(width: 4),
+                size: 11, color: accent),
+            const SizedBox(width: 3),
             Flexible(
               child: Text(
                 step.label,
@@ -209,7 +209,7 @@ class _StepSegment extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: accent,
-                  fontSize: 10.5,
+                  fontSize: 10,
                   fontWeight:
                       isActive || isDone ? FontWeight.w600 : FontWeight.w500,
                 ),

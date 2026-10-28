@@ -37,6 +37,90 @@ Respond strictly in valid JSON matching this schema:
   "optimizedPrompt": "The full, high-fidelity optimized prompt text"
 }`;
 
+/**
+ * Have a specific AI model optimize the prompt from its own perspective.
+ */
+export async function optimizePromptWithModel(
+  rawPrompt: string,
+  modelName: string,
+  modelId: string,
+  apiKey?: string
+): Promise<{ optimizedPrompt: string; summary: string }> {
+  const token = apiKey || process.env.OPENROUTER_API_KEY;
+  if (!token) {
+    return createAgentSpecificAlgorithmicOptimization(rawPrompt, modelName);
+  }
+
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost:5000",
+        "X-Title": "TRA Multi-Agent Council",
+      },
+      body: JSON.stringify({
+        model: modelId,
+        messages: [
+          {
+            role: "system",
+            content: `You are ${modelName}, a lead AI architect. Your task is to analyze the user's prompt, sharpen it, apply Chain-of-Thought directives, add strict constraints, and return an optimized prompt for another AI model to execute. Respond with ONLY the improved prompt text. Keep it direct, structured, and rigorous.`,
+          },
+          {
+            role: "user",
+            content: `Optimize and sharpen this prompt for another AI model:\\n\\n\"\"\"${rawPrompt}\"\"\"`,
+          },
+        ],
+        temperature: 0.2,
+        max_tokens: 700,
+      }),
+      signal: AbortSignal.timeout(9000),
+    });
+
+    if (response.ok) {
+      const data: any = await response.json();
+      const content = (data?.choices?.[0]?.message?.content || "").trim();
+      if (content.length > 20) {
+        return {
+          optimizedPrompt: content,
+          summary: `Reframed with Chain-of-Thought and structural constraints by ${modelName}`,
+        };
+      }
+    }
+  } catch {
+    // Fall back to agent-specific algorithmic optimization
+  }
+
+  return createAgentSpecificAlgorithmicOptimization(rawPrompt, modelName);
+}
+
+export function createAgentSpecificAlgorithmicOptimization(
+  rawPrompt: string,
+  modelName: string
+): { optimizedPrompt: string; summary: string } {
+  const trimmed = rawPrompt.trim();
+  const optimizedPrompt = `### [OPTIMIZED DIRECTIVE — PREPARED BY ${modelName.toUpperCase()}]
+<objective>
+Execute the following user request with rigorous accuracy, verified logical deductions, and no hallucination.
+</objective>
+
+<user_task>
+${trimmed}
+</user_task>
+
+### [EXECUTION PROTOCOL]
+1. Deconstruct core requirements and address implicit assumptions.
+2. Provide step-by-step reasoning (Chain-of-Thought) before the final conclusion.
+3. Validate boundary conditions, potential edge cases, and failure modes.
+4. Conclude with a definitive, clean, and actionable output.`;
+
+  return {
+    optimizedPrompt,
+    summary: `Sharpened with CoT and edge-case guardrails by ${modelName}`,
+  };
+}
+
 export async function optimizeUserPrompt(
   rawPrompt: string,
   apiKey?: string
