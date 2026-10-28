@@ -10,7 +10,9 @@ import '../widgets/multi_agent_turn_card.dart';
 import '../widgets/typing_indicator.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({super.key});
+  final VoidCallback? onLogout;
+
+  const HomeScreen({super.key, this.onLogout});
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
@@ -87,7 +89,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.background,
-      drawer: const HistoryDrawer(),
+      drawer: HistoryDrawer(onLogout: widget.onLogout),
       appBar: AppBar(
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),

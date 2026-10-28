@@ -5,22 +5,32 @@ import 'package:http/http.dart' as http;
 import '../models/multi_agent_turn.dart';
 
 class UserAccount {
-  final int id;
+  final String id;
   final String email;
   final String fullName;
+  final String? token;
 
-  UserAccount({required this.id, required this.email, required this.fullName});
+  UserAccount({
+    required this.id,
+    required this.email,
+    required this.fullName,
+    this.token,
+  });
 
-  factory UserAccount.fromJson(Map<String, dynamic> json) {
+  factory UserAccount.fromJson(Map<String, dynamic> json, {String? token}) {
     return UserAccount(
-      id: (json['id'] as num?)?.toInt() ?? 0,
+      id: json['id']?.toString() ?? '',
       email: json['email'] as String? ?? '',
-      fullName: json['fullName'] as String? ?? '',
+      fullName: json['fullName'] as String? ?? json['name'] as String? ?? '',
+      token: token ?? json['token'] as String?,
     );
   }
 }
 
 class ApiService {
+  static String? activeToken;
+  static UserAccount? currentUser;
+
   /// Base API URL.
   /// - Priority: `--dart-define=API_URL=http://...`
   /// - Android default: `127.0.0.1:5000/api` (relies on `adb reverse tcp:5000 tcp:5000` which works on physical USB devices),
@@ -29,13 +39,20 @@ class ApiService {
     const fromEnv = String.fromEnvironment('API_URL');
     if (fromEnv.isNotEmpty) return fromEnv;
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      // 127.0.0.1 with adb reverse connects physical phones directly to laptop server
       return 'http://127.0.0.1:5000/api';
     }
     return 'http://localhost:5000/api';
   }
 
-  Future<UserAccount> signup({
+  Map<String, String> get _headers {
+    final headers = {'Content-Type': 'application/json'};
+    if (activeToken != null) {
+      headers['Authorization'] = 'Bearer $activeToken';
+    }
+    return headers;
+  }
+
+  Future<Map<String, dynamic>> signup({
     required String email,
     required String password,
     required String fullName,
@@ -45,21 +62,21 @@ class ApiService {
           Uri.parse('$baseUrl/auth/signup'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
-            'email': email,
+            'email': email.trim().toLowerCase(),
             'password': password,
-            'fullName': fullName,
+            'fullName': fullName.trim(),
           }),
         )
         .timeout(const Duration(seconds: 15));
 
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 201 || response.statusCode == 200) {
-      return UserAccount.fromJson(jsonDecode(response.body));
+      return data;
     }
-    final error = jsonDecode(response.body);
-    throw Exception(error['error'] ?? 'Signup failed');
+    throw Exception(data['error'] ?? 'Signup failed');
   }
 
-  Future<UserAccount> login({
+  Future<Map<String, dynamic>> login({
     required String email,
     required String password,
   }) async {
@@ -67,15 +84,82 @@ class ApiService {
         .post(
           Uri.parse('$baseUrl/auth/login'),
           headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'email': email, 'password': password}),
+          body: jsonEncode({
+            'email': email.trim().toLowerCase(),
+            'password': password,
+          }),
         )
         .timeout(const Duration(seconds: 15));
 
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200) {
-      return UserAccount.fromJson(jsonDecode(response.body));
+      return data;
     }
-    final error = jsonDecode(response.body);
-    throw Exception(error['error'] ?? 'Invalid email or password');
+    throw Exception(data['error'] ?? 'Invalid email or password');
+  }
+
+  Future<UserAccount> verifyOtp({
+    required String email,
+    required String otp,
+    required String type,
+  }) async {
+    final response = await http
+        .post(
+          Uri.parse('$baseUrl/auth/verify-otp'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'email': email.trim().toLowerCase(),
+            'otp': otp.trim(),
+            'type': type,
+          }),
+        )
+        .timeout(const Duration(seconds: 15));
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode == 200 && data['success'] == true) {
+      final token = data['token'] as String?;
+      activeToken = token;
+      final userMap = data['user'] as Map<String, dynamic>;
+      final user = UserAccount.fromJson(userMap, token: token);
+      currentUser = user;
+      return user;
+    }
+    throw Exception(data['error'] ?? 'Invalid or expired OTP code');
+  }
+
+  Future<Map<String, dynamic>> resendOtp({
+    required String email,
+    required String type,
+  }) async {
+    final response = await http
+        .post(
+          Uri.parse('$baseUrl/auth/resend-otp'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'email': email.trim().toLowerCase(),
+            'type': type,
+          }),
+        )
+        .timeout(const Duration(seconds: 15));
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode == 200) {
+      return data;
+    }
+    throw Exception(data['error'] ?? 'Failed to resend OTP');
+  }
+
+  Future<void> logout() async {
+    try {
+      await http
+          .post(
+            Uri.parse('$baseUrl/auth/logout'),
+            headers: _headers,
+          )
+          .timeout(const Duration(seconds: 5));
+    } catch (_) {}
+    activeToken = null;
+    currentUser = null;
   }
 
   Future<MultiAgentTurn> sendPrompt({
@@ -85,7 +169,7 @@ class ApiService {
     final response = await http
         .post(
           Uri.parse('$baseUrl/multi-agent'),
-          headers: {'Content-Type': 'application/json'},
+          headers: _headers,
           body: jsonEncode({'prompt': prompt, 'threadId': threadId}),
         )
         .timeout(const Duration(seconds: 45));
@@ -104,7 +188,7 @@ class ApiService {
   Future<List<ThreadSummary>> fetchThreads() async {
     try {
       final response = await http
-          .get(Uri.parse('$baseUrl/threads'))
+          .get(Uri.parse('$baseUrl/threads'), headers: _headers)
           .timeout(const Duration(seconds: 8));
       if (response.statusCode == 200) {
         final List<dynamic> list = jsonDecode(response.body);
@@ -117,7 +201,7 @@ class ApiService {
   Future<List<MultiAgentTurn>> fetchThreadMessages(String threadId) async {
     try {
       final response = await http
-          .get(Uri.parse('$baseUrl/threads/$threadId/messages'))
+          .get(Uri.parse('$baseUrl/threads/$threadId/messages'), headers: _headers)
           .timeout(const Duration(seconds: 8));
       if (response.statusCode == 200) {
         final List<dynamic> list = jsonDecode(response.body);
@@ -131,7 +215,7 @@ class ApiService {
     final response = await http
         .post(
           Uri.parse('$baseUrl/threads'),
-          headers: {'Content-Type': 'application/json'},
+          headers: _headers,
           body: jsonEncode({'title': title ?? 'New Session'}),
         )
         .timeout(const Duration(seconds: 8));

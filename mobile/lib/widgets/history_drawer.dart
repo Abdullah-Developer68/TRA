@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../providers/chat_provider.dart';
+import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 
 class HistoryDrawer extends ConsumerWidget {
@@ -10,10 +11,84 @@ class HistoryDrawer extends ConsumerWidget {
 
   const HistoryDrawer({super.key, this.onLogout});
 
+  void _showLogoutDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.card,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          side: const BorderSide(color: AppTheme.border),
+        ),
+        title: const Row(
+          children: [
+            Icon(LucideIcons.logOut, size: 18, color: AppTheme.error),
+            SizedBox(width: 10),
+            Text(
+              'Sign Out',
+              style: TextStyle(
+                color: AppTheme.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to log out of your session?',
+          style: TextStyle(
+            color: AppTheme.textSecondary,
+            fontSize: 13.5,
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
+            ),
+          ),
+          Material(
+            color: AppTheme.tint(AppTheme.error, 0.16),
+            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+            child: InkWell(
+              onTap: () async {
+                Navigator.pop(ctx); // Close dialog
+                Navigator.pop(context); // Close drawer
+                final api = ApiService();
+                await api.logout();
+                onLogout?.call();
+              },
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                child: Text(
+                  'Log Out',
+                  style: TextStyle(
+                    color: AppTheme.error,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final chatState = ref.watch(chatNotifierProvider);
     final notifier = ref.read(chatNotifierProvider.notifier);
+    final user = ApiService.currentUser;
+    final displayName = user != null && user.fullName.isNotEmpty
+        ? user.fullName
+        : 'Authorized Member';
+    final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
 
     return Drawer(
       backgroundColor: AppTheme.sidebar,
@@ -195,52 +270,77 @@ class HistoryDrawer extends ConsumerWidget {
                     ),
             ),
             const Divider(height: 1),
+            // User Profile & Logout Section
             Padding(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(
                 children: [
                   Container(
-                    width: 34,
-                    height: 34,
-                    decoration: const BoxDecoration(
-                      color: AppTheme.surfaceHigh,
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppTheme.tint(AppTheme.primary, 0.16),
                       shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppTheme.tint(AppTheme.primary, 0.4),
+                      ),
                     ),
                     alignment: Alignment.center,
-                    child: const Text(
-                      'U',
-                      style: TextStyle(
+                    child: Text(
+                      initial,
+                      style: const TextStyle(
                         color: AppTheme.primaryLight,
-                        fontSize: 12,
+                        fontSize: 13,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
                   const SizedBox(width: 10),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Signed in user',
+                          displayName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: AppTheme.textPrimary,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         Text(
-                          '3 Free Active AI Models',
+                          user?.email ?? 'Better Auth Verified',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: AppTheme.textMuted,
-                            fontSize: 10.5,
+                            fontSize: 11,
                           ),
                         ),
                       ],
+                    ),
+                  ),
+                  Tooltip(
+                    message: 'Log Out',
+                    child: InkWell(
+                      onTap: () => _showLogoutDialog(context),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                      child: Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceHigh,
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.radiusSm),
+                          border: Border.all(color: AppTheme.border),
+                        ),
+                        child: const Icon(
+                          LucideIcons.logOut,
+                          size: 15,
+                          color: Color(0xFFF87171),
+                        ),
+                      ),
                     ),
                   ),
                 ],

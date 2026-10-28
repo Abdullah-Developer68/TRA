@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/auth_screen.dart';
 import 'screens/home_screen.dart';
+import 'services/api_service.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -20,21 +21,35 @@ class CouncilApp extends StatefulWidget {
 }
 
 class _CouncilAppState extends State<CouncilApp> {
-  bool _isAuthenticated = true; // Set to true by default or toggle via AuthScreen
+  bool _isAuthenticated = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isAuthenticated = ApiService.currentUser != null;
+  }
+
+  void _onAuthenticated(UserAccount user) {
+    setState(() {
+      _isAuthenticated = true;
+    });
+  }
+
+  void _onLogout() {
+    setState(() {
+      _isAuthenticated = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Multi-Agent Council',
+      title: 'TRA — Multi-Agent Consensus',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       home: _isAuthenticated
-          ? const HomeScreen()
-          : AuthScreen(
-              onAuthenticated: () {
-                setState(() => _isAuthenticated = true);
-              },
-            ),
+          ? HomeScreen(onLogout: _onLogout)
+          : AuthScreen(onAuthenticated: _onAuthenticated),
     );
   }
 }
