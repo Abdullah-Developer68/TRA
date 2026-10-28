@@ -52,7 +52,7 @@ class ApiService {
     return headers;
   }
 
-  Future<Map<String, dynamic>> signup({
+  Future<UserAccount> signup({
     required String email,
     required String password,
     required String fullName,
@@ -71,12 +71,17 @@ class ApiService {
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 201 || response.statusCode == 200) {
-      return data;
+      final token = data['token'] as String?;
+      activeToken = token;
+      final userMap = data['user'] as Map<String, dynamic>;
+      final user = UserAccount.fromJson(userMap, token: token);
+      currentUser = user;
+      return user;
     }
     throw Exception(data['error'] ?? 'Signup failed');
   }
 
-  Future<Map<String, dynamic>> login({
+  Future<UserAccount> login({
     required String email,
     required String password,
   }) async {
@@ -93,30 +98,6 @@ class ApiService {
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200) {
-      return data;
-    }
-    throw Exception(data['error'] ?? 'Invalid email or password');
-  }
-
-  Future<UserAccount> verifyOtp({
-    required String email,
-    required String otp,
-    required String type,
-  }) async {
-    final response = await http
-        .post(
-          Uri.parse('$baseUrl/auth/verify-otp'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'email': email.trim().toLowerCase(),
-            'otp': otp.trim(),
-            'type': type,
-          }),
-        )
-        .timeout(const Duration(seconds: 15));
-
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    if (response.statusCode == 200 && data['success'] == true) {
       final token = data['token'] as String?;
       activeToken = token;
       final userMap = data['user'] as Map<String, dynamic>;
@@ -124,29 +105,7 @@ class ApiService {
       currentUser = user;
       return user;
     }
-    throw Exception(data['error'] ?? 'Invalid or expired OTP code');
-  }
-
-  Future<Map<String, dynamic>> resendOtp({
-    required String email,
-    required String type,
-  }) async {
-    final response = await http
-        .post(
-          Uri.parse('$baseUrl/auth/resend-otp'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'email': email.trim().toLowerCase(),
-            'type': type,
-          }),
-        )
-        .timeout(const Duration(seconds: 15));
-
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    if (response.statusCode == 200) {
-      return data;
-    }
-    throw Exception(data['error'] ?? 'Failed to resend OTP');
+    throw Exception(data['error'] ?? 'Invalid email or password');
   }
 
   Future<void> logout() async {

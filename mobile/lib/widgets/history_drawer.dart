@@ -311,7 +311,7 @@ class HistoryDrawer extends ConsumerWidget {
                           ),
                         ),
                         Text(
-                          user?.email ?? 'Better Auth Verified',
+                          user?.email ?? 'Active Member',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(

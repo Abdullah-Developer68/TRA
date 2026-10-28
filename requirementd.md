@@ -100,38 +100,36 @@ Its core mission is to transform unrefined or suboptimal user prompts into high-
 
 ---
 
-## 4. Authentication Architecture: Better Auth with Email OTP & Logout
+## 4. Simple Email & Password Authentication & Logout
 
-### 4.1 Evaluation & Feasibility of Better Auth
-- **Compatibility**: Better Auth (`better-auth`) is fully compatible with Node.js/Express and Drizzle ORM PostgreSQL (`drizzleAdapter`).
-- **Email OTP Plugin**: `emailOTP` provides built-in OTP generation, expiration management, and cryptographic validation.
-- **Session & Sign-Out**: Full session lifecycle management with token expiration and revocable sign-out endpoints.
+### 4.1 Architecture
+- **Lightweight & Direct**: OTP workflows and third-party auth libraries (such as Better Auth) have been replaced with a native, robust email and password system.
+- **Secure Hashing**: Password hashing using SHA-256 cryptographic digests.
+- **Session Tokens**: Cryptographically generated 24-byte session tokens stored in `app_sessions` with 30-day expiration.
+- **Session Lifecycle**: Instant sign up, instant sign in, token revocation upon logout, and token verification via `/me`.
 
-### 4.2 Auth Endpoints
-- `POST /api/auth/signup`: Accepts email, password, and full name. Registers the account and dispatches an OTP.
-- `POST /api/auth/login`: Validates credentials, then dispatches a 6-digit login OTP to the user's email.
-- `POST /api/auth/verify-otp`: Validates the OTP code, activates verified status, and returns a session token.
-- `POST /api/auth/resend-otp`: Dispatches a fresh OTP code with rate-limit cooldown.
-- `POST /api/auth/logout`: Revokes active session token and clears client state.
-- `GET /api/auth/me`: Retrieves the currently authenticated profile.
+### 4.2 Endpoints
+- `POST /api/auth/signup`: Accepts `email`, `password`, and `fullName`. Creates account, issues session token, and logs in immediately without OTP.
+- `POST /api/auth/login`: Validates `email` and `password`. Issues session token and returns user profile upon valid credentials.
+- `POST /api/auth/logout`: Revokes active session token from `app_sessions`.
+- `GET /api/auth/me`: Validates bearer token and returns authenticated user details.
 
 ### 4.3 Mobile UI Integration
 - **Auth Screen (`lib/screens/auth_screen.dart`)**:
-  - Sign In mode (Email & Password $\to$ triggers OTP).
-  - Sign Up mode (Full Name, Email & Password $\to$ triggers OTP).
-  - OTP Verification step (6-digit input, auto-focus, countdown timer, resend button, and dev auto-fill chip).
+  - Direct toggle between **Sign In** and **Create Account**.
+  - Sign In requires Email & Password; Create Account requires Full Name, Email, and Password (min 6 chars).
+  - One-tap submission immediately authenticates and opens the deliberation console.
 - **Logout Action (`lib/widgets/history_drawer.dart`)**:
-  - Profile header displaying the authenticated user's name and email.
-  - Interactive Log Out button triggering a confirmation modal before revoking session.
+  - Profile footer in sidebar shows the signed-in user's initials, name, and email.
+  - Interactive Log Out button with confirmation dialog.
+  - Revokes session and transitions the app back to the sign-in screen.
 
 ---
 
 ## 5. Database Schema (Drizzle ORM)
 - `users`: Legacy users table (`id`, `fullName`, `phone`).
-- `user`: Better Auth primary user table (`id`, `name`, `email`, `emailVerified`, `image`, timestamps).
-- `session`: Better Auth active session tracking (`id`, `expiresAt`, `token`, `userId`, `ipAddress`, `userAgent`).
-- `account`: Better Auth linked credentials and password hashes (`id`, `accountId`, `providerId`, `userId`, `password`).
-- `verification`: Better Auth OTP and token verification storage (`id`, `identifier`, `value`, `expiresAt`).
+- `app_accounts`: Primary user account credentials (`id`, `email`, `passwordHash`, `fullName`, `createdAt`).
+- `app_sessions`: Active session tokens (`id`, `token`, `accountId`, `createdAt`, `expiresAt`).
 - `chat_threads`: Thread grouping (`id`, `title`, timestamps).
 - `multi_agent_turns`: Complete record of each turn:
   - `threadId`, `userPrompt`, `optimizedPrompt`, `optimizationDetails`
