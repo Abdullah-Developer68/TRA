@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 import '../theme/app_theme.dart';
 
 class ChatInputBar extends StatefulWidget {
@@ -117,16 +118,20 @@ class _ChatInputBarState extends State<ChatInputBar> {
                         width: 34,
                         height: 34,
                         decoration: BoxDecoration(
-                          color: widget.isGenerating ? const Color(0xFF1E212D) : AppTheme.primary,
+                          color: widget.isGenerating
+                              ? const Color(0xFF1E212D)
+                              : AppTheme.primary,
                           borderRadius: BorderRadius.circular(10),
                           boxShadow: widget.isGenerating
                               ? null
                               : [
                                   BoxShadow(
-                                    color: AppTheme.primary.withOpacity(0.4),
+                                    color: AppTheme.primary.withValues(
+                                      alpha: 0.4,
+                                    ),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
-                                  )
+                                  ),
                                 ],
                         ),
                         alignment: Alignment.center,
@@ -136,7 +141,9 @@ class _ChatInputBarState extends State<ChatInputBar> {
                                 height: 14,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryLight),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppTheme.primaryLight,
+                                  ),
                                 ),
                               )
                             : const Icon(
@@ -167,7 +174,9 @@ class _ChatInputBarState extends State<ChatInputBar> {
         color: isSelected ? AppTheme.accent : const Color(0xFF141418),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isSelected ? AppTheme.primary.withOpacity(0.4) : AppTheme.border,
+          color: isSelected
+              ? AppTheme.primary.withValues(alpha: 0.4)
+              : AppTheme.border,
         ),
       ),
       child: Row(
@@ -182,7 +191,9 @@ class _ChatInputBarState extends State<ChatInputBar> {
           Text(
             label,
             style: TextStyle(
-              color: isSelected ? AppTheme.accentForeground : AppTheme.textSecondary,
+              color: isSelected
+                  ? AppTheme.accentForeground
+                  : AppTheme.textSecondary,
               fontSize: 10.5,
               fontWeight: FontWeight.w600,
             ),

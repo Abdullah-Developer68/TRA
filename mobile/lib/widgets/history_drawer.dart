@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 import '../providers/chat_provider.dart';
 import '../theme/app_theme.dart';
 
@@ -32,7 +33,11 @@ class HistoryDrawer extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         alignment: Alignment.center,
-                        child: const Icon(LucideIcons.brain, size: 16, color: Colors.white),
+                        child: const Icon(
+                          LucideIcons.brain,
+                          size: 16,
+                          color: Colors.white,
+                        ),
                       ),
                       const SizedBox(width: 10),
                       const Text(
@@ -46,7 +51,11 @@ class HistoryDrawer extends ConsumerWidget {
                       ),
                       const Spacer(),
                       IconButton(
-                        icon: const Icon(LucideIcons.edit3, size: 17, color: AppTheme.textSecondary),
+                        icon: const Icon(
+                          LucideIcons.edit3,
+                          size: 17,
+                          color: AppTheme.textSecondary,
+                        ),
                         onPressed: () {
                           notifier.resetChat();
                           Navigator.pop(context);
@@ -70,10 +79,10 @@ class HistoryDrawer extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(10),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.primary.withOpacity(0.3),
+                            color: AppTheme.primary.withValues(alpha: 0.3),
                             blurRadius: 10,
                             offset: const Offset(0, 3),
-                          )
+                          ),
                         ],
                       ),
                       alignment: Alignment.center,
@@ -105,23 +114,32 @@ class HistoryDrawer extends ConsumerWidget {
                   ? const Center(
                       child: Text(
                         'No previous sessions',
-                        style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                        style: TextStyle(
+                          color: AppTheme.textMuted,
+                          fontSize: 12,
+                        ),
                       ),
                     )
                   : ListView.builder(
                       itemCount: chatState.threads.length,
                       itemBuilder: (context, index) {
                         final thread = chatState.threads[index];
-                        final isSelected = thread.id == chatState.activeThreadId;
+                        final isSelected =
+                            thread.id == chatState.activeThreadId;
 
                         return Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: isSelected ? AppTheme.accent : Colors.transparent,
+                            color: isSelected
+                                ? AppTheme.accent
+                                : Colors.transparent,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
                               color: isSelected
-                                  ? AppTheme.primary.withOpacity(0.3)
+                                  ? AppTheme.primary.withValues(alpha: 0.3)
                                   : Colors.transparent,
                             ),
                           ),
@@ -130,7 +148,9 @@ class HistoryDrawer extends ConsumerWidget {
                             leading: Icon(
                               LucideIcons.messageSquare,
                               size: 14,
-                              color: isSelected ? AppTheme.primaryLight : AppTheme.textMuted,
+                              color: isSelected
+                                  ? AppTheme.primaryLight
+                                  : AppTheme.textMuted,
                             ),
                             title: Text(
                               thread.title,
@@ -141,7 +161,9 @@ class HistoryDrawer extends ConsumerWidget {
                                     ? AppTheme.accentForeground
                                     : AppTheme.textSecondary,
                                 fontSize: 12.5,
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
                               ),
                             ),
                             onTap: () {

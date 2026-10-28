@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 import '../providers/chat_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/chat_input_bar.dart';
@@ -15,7 +16,8 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final chatState = ref.watch(chatNotifierProvider);
     final notifier = ref.read(chatNotifierProvider.notifier);
-    final isWorking = chatState.activeStage != PipelineStage.idle &&
+    final isWorking =
+        chatState.activeStage != PipelineStage.idle &&
         chatState.activeStage != PipelineStage.complete &&
         chatState.activeStage != PipelineStage.error;
 
@@ -28,13 +30,19 @@ class HomeScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: AppTheme.primary.withOpacity(0.15),
+                color: AppTheme.primary.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppTheme.primary.withOpacity(0.3)),
+                border: Border.all(
+                  color: AppTheme.primary.withValues(alpha: 0.3),
+                ),
               ),
               child: const Row(
                 children: [
-                  Icon(LucideIcons.brain, size: 13, color: AppTheme.primaryLight),
+                  Icon(
+                    LucideIcons.brain,
+                    size: 13,
+                    color: AppTheme.primaryLight,
+                  ),
                   SizedBox(width: 5),
                   Text(
                     'TRA',
@@ -80,12 +88,14 @@ class HomeScreen extends ConsumerWidget {
                     itemCount: chatState.turns.length,
                     itemBuilder: (context, index) {
                       final turn = chatState.turns[index];
-                      final activeView = chatState.activeViews[turn.turnId] ?? 'consensus';
+                      final activeView =
+                          chatState.activeViews[turn.turnId] ?? 'consensus';
 
                       return MultiAgentTurnCard(
                         turn: turn,
                         activeView: activeView,
-                        onViewChanged: (view) => notifier.setActiveView(turn.turnId, view),
+                        onViewChanged: (view) =>
+                            notifier.setActiveView(turn.turnId, view),
                       );
                     },
                   ),
@@ -98,18 +108,27 @@ class HomeScreen extends ConsumerWidget {
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppTheme.error.withOpacity(0.15),
+                color: AppTheme.error.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppTheme.error.withOpacity(0.4)),
+                border: Border.all(
+                  color: AppTheme.error.withValues(alpha: 0.4),
+                ),
               ),
               child: Row(
                 children: [
-                  const Icon(LucideIcons.alertCircle, size: 15, color: AppTheme.error),
+                  const Icon(
+                    LucideIcons.alertCircle,
+                    size: 15,
+                    color: AppTheme.error,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       chatState.error!,
-                      style: const TextStyle(color: Color(0xFFFCA5A5), fontSize: 11),
+                      style: const TextStyle(
+                        color: Color(0xFFFCA5A5),
+                        fontSize: 11,
+                      ),
                     ),
                   ),
                 ],
@@ -144,11 +163,17 @@ class HomeScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppTheme.primary.withOpacity(0.12),
+                color: AppTheme.primary.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
-                border: Border.all(color: AppTheme.primary.withOpacity(0.3)),
+                border: Border.all(
+                  color: AppTheme.primary.withValues(alpha: 0.3),
+                ),
               ),
-              child: const Icon(LucideIcons.brain, size: 36, color: AppTheme.primaryLight),
+              child: const Icon(
+                LucideIcons.brain,
+                size: 36,
+                color: AppTheme.primaryLight,
+              ),
             ),
             const SizedBox(height: 16),
             const Text(
@@ -182,7 +207,10 @@ class HomeScreen extends ConsumerWidget {
                     onTap: () => notifier.submitPrompt(s),
                     borderRadius: BorderRadius.circular(10),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         color: AppTheme.card,
                         borderRadius: BorderRadius.circular(10),
@@ -190,7 +218,11 @@ class HomeScreen extends ConsumerWidget {
                       ),
                       child: Row(
                         children: [
-                          const Icon(LucideIcons.sparkles, size: 14, color: AppTheme.primaryLight),
+                          const Icon(
+                            LucideIcons.sparkles,
+                            size: 14,
+                            color: AppTheme.primaryLight,
+                          ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
