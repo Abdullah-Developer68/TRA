@@ -24,10 +24,10 @@ class PipelineStepper extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF0F1424),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.primary.withOpacity(0.35)),
+        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.35)),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primary.withOpacity(0.12),
+            color: AppTheme.primary.withValues(alpha: 0.12),
             blurRadius: 16,
             offset: const Offset(0, 4),
           )
@@ -48,7 +48,7 @@ class PipelineStepper extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               const Text(
-                'TRA MULTI-AGENT COUNCIL',
+                'MULTI-AI DELIBERATION PIPELINE',
                 style: TextStyle(
                   color: AppTheme.primaryLight,
                   fontSize: 11,
@@ -60,7 +60,7 @@ class PipelineStepper extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppTheme.primary.withOpacity(0.15),
+                  color: AppTheme.primary.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -88,25 +88,25 @@ class PipelineStepper extends StatelessWidget {
           Row(
             children: [
               _buildStepPill(
-                '1. Prompt Skill',
+                '1. Prompt Prep',
                 isActive: stage == PipelineStage.optimizing,
                 isDone: stage.index > PipelineStage.optimizing.index,
               ),
               const SizedBox(width: 6),
               _buildStepPill(
-                '2. 4 AI Agents',
+                '2. Querying 4 AIs',
                 isActive: stage == PipelineStage.queryingAgents,
                 isDone: stage.index > PipelineStage.queryingAgents.index,
               ),
               const SizedBox(width: 6),
               _buildStepPill(
-                '3. Debate',
+                '3. AI Discussion',
                 isActive: stage == PipelineStage.interAgentDebate,
                 isDone: stage.index > PipelineStage.interAgentDebate.index,
               ),
               const SizedBox(width: 6),
               _buildStepPill(
-                '4. Consensus',
+                '4. Best Answer',
                 isActive: stage == PipelineStage.synthesizing,
                 isDone: stage.index > PipelineStage.synthesizing.index,
               ),
@@ -123,13 +123,13 @@ class PipelineStepper extends StatelessWidget {
     Color text = AppTheme.textMuted;
 
     if (isActive) {
-      bg = AppTheme.primary.withOpacity(0.2);
+      bg = AppTheme.primary.withValues(alpha: 0.2);
       border = AppTheme.primary;
       text = AppTheme.primaryLight;
     } else if (isDone) {
-      bg = const Color(0xFF10B981).withOpacity(0.15);
-      border = const Color(0xFF10B981).withOpacity(0.4);
-      text = const Color(0xFF34D399);
+      bg = const Color(0xFF10B981).withValues(alpha: 0.15);
+      border = const Color(0xFF10B981);
+      text = const Color(0xFF10B981);
     }
 
     return Expanded(
@@ -143,30 +143,34 @@ class PipelineStepper extends StatelessWidget {
         alignment: Alignment.center,
         child: Text(
           label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: text,
-            fontSize: 9.5,
-            fontWeight: isActive || isDone ? FontWeight.w600 : FontWeight.w500,
+            fontSize: 10,
+            fontWeight: isActive || isDone ? FontWeight.w600 : FontWeight.w400,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ),
     );
   }
 
-  String _stageLabel(PipelineStage s) {
-    switch (s) {
+  String _stageLabel(PipelineStage stage) {
+    switch (stage) {
       case PipelineStage.optimizing:
-        return 'Optimizing';
+        return 'Prompt Optimization';
       case PipelineStage.queryingAgents:
-        return 'Consulting 4 AIs';
+        return 'Broadcasting to 4 LLMs';
       case PipelineStage.interAgentDebate:
-        return 'Debating';
+        return 'Inter-AI Debate';
       case PipelineStage.synthesizing:
-        return 'Synthesizing';
-      default:
-        return '';
+        return 'Selecting Best Answer';
+      case PipelineStage.complete:
+        return 'Completed';
+      case PipelineStage.idle:
+        return 'Ready';
+      case PipelineStage.error:
+        return 'Error';
     }
   }
 }

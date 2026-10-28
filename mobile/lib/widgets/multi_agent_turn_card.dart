@@ -71,7 +71,7 @@ class MultiAgentTurnCard extends StatelessWidget {
               border: Border.all(color: const Color(0xFF232634)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.4),
+                  color: Colors.black.withValues(alpha: 0.4),
                   blurRadius: 18,
                   offset: const Offset(0, 6),
                 )
@@ -89,9 +89,9 @@ class MultiAgentTurnCard extends StatelessWidget {
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
-                        // Rank 1: Consensus (Always Shown First)
+                        // Best Answer (Always Shown First by Default)
                         _buildToggleChip(
-                          label: '🏆 Rank 1: Most Accurate',
+                          label: '⭐ Best Answer',
                           badge: 'Consensus',
                           isSelected: activeView == 'consensus',
                           onTap: () => onViewChanged('consensus'),
@@ -99,16 +99,21 @@ class MultiAgentTurnCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
 
-                        // Other AI Agents
+                        // Other AI Models given the same prompt
                         ...turn.agentResponses.map((agent) {
                           final isSelected = activeView == agent.agentId;
-                          final medal = agent.rank == 2 ? '🥈' : agent.rank == 3 ? '🥉' : '🎖️';
-                          final shortName = agent.agentName.split('(')[0].trim();
+                          final cleanName = agent.agentName
+                              .replaceAll('Agent Alpha (', '')
+                              .replaceAll('Agent Beta (', '')
+                              .replaceAll('Agent Gamma (', '')
+                              .replaceAll('Agent Delta (', '')
+                              .replaceAll(')', '')
+                              .trim();
 
                           return Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: _buildToggleChip(
-                              label: '$medal Rank ${agent.rank}: $shortName',
+                              label: '🤖 $cleanName',
                               badge: '${agent.accuracyScore}%',
                               isSelected: isSelected,
                               onTap: () => onViewChanged(agent.agentId),
@@ -119,9 +124,9 @@ class MultiAgentTurnCard extends StatelessWidget {
                           );
                         }),
 
-                        // Inter-Agent Debate
+                        // Inter-AI Discussion & Debate
                         _buildToggleChip(
-                          label: '💬 Debate (${turn.discussionRounds.length})',
+                          label: '💬 AI Discussion (${turn.discussionRounds.length})',
                           badge: null,
                           isSelected: activeView == 'debate',
                           onTap: () => onViewChanged('debate'),
@@ -146,13 +151,19 @@ class MultiAgentTurnCard extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 if (activeView == 'consensus') ...[
-                                  const Text(
-                                    'Verified Consensus & Most Accurate Solution',
-                                    style: TextStyle(
-                                      color: AppTheme.textPrimary,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                                  const Row(
+                                    children: [
+                                      Icon(LucideIcons.award, size: 16, color: Color(0xFFFBBF24)),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'Best Answer (Multi-AI Consensus)',
+                                        style: TextStyle(
+                                          color: AppTheme.textPrimary,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
@@ -163,34 +174,50 @@ class MultiAgentTurnCard extends StatelessWidget {
                                     ),
                                   ),
                                 ] else if (selectedAgent != null) ...[
-                                  Text(
-                                    selectedAgent.agentName,
-                                    style: const TextStyle(
-                                      color: AppTheme.textPrimary,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                                  Row(
+                                    children: [
+                                      const Icon(LucideIcons.bot, size: 16, color: Color(0xFF38BDF8)),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          '${selectedAgent.agentName} (Raw Output)',
+                                          style: const TextStyle(
+                                            color: AppTheme.textPrimary,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    '${selectedAgent.role} • Score: ${selectedAgent.accuracyScore}%',
+                                    'Individual response to the exact same prompt • Deliberation Score: ${selectedAgent.accuracyScore}%',
                                     style: const TextStyle(
                                       color: Color(0xFF38BDF8),
                                       fontSize: 11,
                                     ),
                                   ),
                                 ] else if (activeView == 'debate') ...[
-                                  const Text(
-                                    'Inter-Agent Deliberation & Cross-Examination',
-                                    style: TextStyle(
-                                      color: AppTheme.textPrimary,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                                  const Row(
+                                    children: [
+                                      Icon(LucideIcons.messagesSquare, size: 16, color: Color(0xFFA5B4FC)),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'Inter-AI Discussion & Cross-Examination',
+                                        style: TextStyle(
+                                          color: AppTheme.textPrimary,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   const SizedBox(height: 2),
                                   const Text(
-                                    'Critiques and rebuttals exchanged between models',
+                                    'How the 4 models discussed, critiqued, and verified each other\'s answers',
                                     style: TextStyle(
                                       color: AppTheme.textSecondary,
                                       fontSize: 11,
@@ -239,12 +266,20 @@ class MultiAgentTurnCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(color: const Color(0xFF20293D)),
                             ),
-                            child: Text(
-                              'Council Assessment: ${selectedAgent.critiqueOfOthers!}',
-                              style: const TextStyle(
-                                color: Color(0xFF93C5FD),
-                                fontSize: 11.5,
-                              ),
+                            child: Row(
+                              children: [
+                                const Icon(LucideIcons.info, size: 14, color: Color(0xFF93C5FD)),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Peer Discussion Note: ${selectedAgent.critiqueOfOthers!}',
+                                    style: const TextStyle(
+                                      color: Color(0xFF93C5FD),
+                                      fontSize: 11.5,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -253,77 +288,14 @@ class MultiAgentTurnCard extends StatelessWidget {
                           styleSheet: _buildMarkdownStyle(context),
                         ),
                       ] else if (activeView == 'debate') ...[
-                        ...turn.discussionRounds.map((round) {
-                          Color badgeColor = const Color(0xFF3B82F6);
-                          if (round.type == 'critique') badgeColor = const Color(0xFFEF4444);
-                          if (round.type == 'endorsement') badgeColor = const Color(0xFF10B981);
-
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF0D0F16),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: const Color(0xFF1E2232)),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      round.speaker,
-                                      style: const TextStyle(
-                                        color: Color(0xFF818CF8),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    if (round.targetAgent != null) ...[
-                                      const Text(
-                                        ' → ',
-                                        style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
-                                      ),
-                                      Text(
-                                        round.targetAgent!,
-                                        style: const TextStyle(
-                                          color: AppTheme.textSecondary,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                    const Spacer(),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: badgeColor.withOpacity(0.15),
-                                        borderRadius: BorderRadius.circular(4),
-                                        border: Border.all(color: badgeColor.withOpacity(0.4)),
-                                      ),
-                                      child: Text(
-                                        round.type.toUpperCase(),
-                                        style: TextStyle(
-                                          color: badgeColor,
-                                          fontSize: 9.5,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  round.statement,
-                                  style: const TextStyle(
-                                    color: Color(0xFFD1D5DB),
-                                    fontSize: 12,
-                                    height: 1.35,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }),
+                        if (turn.discussionRounds.isEmpty) ...[
+                          const Text(
+                            'No inter-agent debate records found.',
+                            style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
+                          ),
+                        ] else ...[
+                          ...turn.discussionRounds.map((round) => _buildDebateItem(round)),
+                        ],
                       ],
                     ],
                   ),
@@ -345,18 +317,19 @@ class MultiAgentTurnCard extends StatelessWidget {
     Color? activeBorderColor,
     Color? activeTextColor,
   }) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? activeColor : const Color(0xFF13141E),
-          borderRadius: BorderRadius.circular(8),
+          color: isSelected ? activeColor : const Color(0xFF141620),
+          borderRadius: BorderRadius.circular(9),
           border: Border.all(
             color: isSelected
-                ? (activeBorderColor ?? activeColor.withOpacity(0.6))
-                : const Color(0xFF1E2130),
+                ? (activeBorderColor ?? activeColor)
+                : const Color(0xFF242838),
+            width: 1,
           ),
         ),
         child: Row(
@@ -365,23 +338,27 @@ class MultiAgentTurnCard extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? (activeTextColor ?? Colors.white) : AppTheme.textSecondary,
-                fontSize: 11,
+                color: isSelected
+                    ? (activeTextColor ?? Colors.white)
+                    : const Color(0xFF9CA3AF),
+                fontSize: 11.5,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
               ),
             ),
             if (badge != null) ...[
               const SizedBox(width: 5),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(4),
+                  color: isSelected
+                      ? Colors.white.withValues(alpha: 0.18)
+                      : const Color(0xFF22283A),
+                  borderRadius: BorderRadius.circular(5),
                 ),
                 child: Text(
                   badge,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : const Color(0xFFF59E0B),
+                    color: isSelected ? Colors.white : AppTheme.textMuted,
                     fontSize: 9.5,
                     fontWeight: FontWeight.w600,
                   ),
@@ -394,25 +371,112 @@ class MultiAgentTurnCard extends StatelessWidget {
     );
   }
 
+  Widget _buildDebateItem(DiscussionRoundItem round) {
+    Color typeColor = const Color(0xFF60A5FA);
+    IconData typeIcon = LucideIcons.messageCircle;
+
+    if (round.type == 'critique') {
+      typeColor = const Color(0xFFF87171);
+      typeIcon = LucideIcons.alertCircle;
+    } else if (round.type == 'endorsement') {
+      typeColor = const Color(0xFF34D399);
+      typeIcon = LucideIcons.checkCircle;
+    } else if (round.type == 'synthesis') {
+      typeColor = const Color(0xFFA78BFA);
+      typeIcon = LucideIcons.sparkles;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF10131E),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: typeColor.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(typeIcon, size: 13, color: typeColor),
+              const SizedBox(width: 6),
+              Text(
+                round.speaker,
+                style: TextStyle(
+                  color: typeColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Icon(LucideIcons.arrowRight, size: 10, color: AppTheme.textMuted),
+              const SizedBox(width: 6),
+              Text(
+                round.targetAgent ?? 'All Models',
+                style: const TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: typeColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  round.type.toUpperCase(),
+                  style: TextStyle(
+                    color: typeColor,
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            round.statement,
+            style: const TextStyle(
+              color: AppTheme.textPrimary,
+              fontSize: 12,
+              height: 1.35,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   MarkdownStyleSheet _buildMarkdownStyle(BuildContext context) {
     return MarkdownStyleSheet(
-      p: const TextStyle(color: Color(0xFFECECF1), fontSize: 13, height: 1.45),
-      h1: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
-      h2: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
-      h3: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+      p: const TextStyle(color: Color(0xFFE2E8F0), fontSize: 13, height: 1.5),
+      h1: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700, height: 1.4),
+      h2: const TextStyle(color: Color(0xFFF1F5F9), fontSize: 15, fontWeight: FontWeight.w700, height: 1.4),
+      h3: const TextStyle(color: Color(0xFFE2E8F0), fontSize: 13.5, fontWeight: FontWeight.w600, height: 1.4),
+      h4: const TextStyle(color: Color(0xFFCBD5E1), fontSize: 12.5, fontWeight: FontWeight.w600),
       code: const TextStyle(
-        backgroundColor: Color(0xFF1A1D27),
-        color: Color(0xFF67E8F9),
+        color: Color(0xFF38BDF8),
+        backgroundColor: Color(0xFF171B26),
         fontFamily: 'monospace',
         fontSize: 11.5,
       ),
       codeblockDecoration: BoxDecoration(
         color: const Color(0xFF0D0F17),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFF222638)),
+        border: Border.all(color: const Color(0xFF1E2333)),
       ),
-      blockquote: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
-      listBullet: const TextStyle(color: AppTheme.primaryLight),
+      blockquote: const TextStyle(color: Color(0xFF94A3B8), fontStyle: FontStyle.italic),
+      blockquoteDecoration: const BoxDecoration(
+        border: Border(left: BorderSide(color: Color(0xFF2E6BFF), width: 3)),
+      ),
+      listBullet: const TextStyle(color: Color(0xFF2E6BFF)),
+      tableHead: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+      tableBorder: TableBorder.all(color: const Color(0xFF242A3D), width: 1),
     );
   }
 }
