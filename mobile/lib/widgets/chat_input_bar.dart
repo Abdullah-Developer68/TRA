@@ -19,6 +19,16 @@ class ChatInputBar extends StatefulWidget {
 
 class _ChatInputBarState extends State<ChatInputBar> {
   final TextEditingController _controller = TextEditingController();
+  bool _hasText = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(() {
+      final has = _controller.text.trim().isNotEmpty;
+      if (has != _hasText) setState(() => _hasText = has);
+    });
+  }
 
   void _handleSend() {
     if (widget.isGenerating) return;
@@ -36,10 +46,12 @@ class _ChatInputBarState extends State<ChatInputBar> {
 
   @override
   Widget build(BuildContext context) {
+    final canSend = _hasText && !widget.isGenerating;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       decoration: const BoxDecoration(
-        color: AppTheme.sidebar,
+        color: AppTheme.background,
         border: Border(top: BorderSide(color: AppTheme.border)),
       ),
       child: SafeArea(
@@ -47,110 +59,97 @@ class _ChatInputBarState extends State<ChatInputBar> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Mode Badges Row
+            // Mode selector — Expanded children so it can never overflow.
             Row(
               children: [
-                _buildModePill(
-                  label: 'Multi-Agent Consensus',
-                  icon: LucideIcons.brain,
-                  isSelected: true,
+                Expanded(
+                  child: _ModePill(
+                    label: 'Consensus',
+                    icon: LucideIcons.brain,
+                    isSelected: true,
+                  ),
                 ),
                 const SizedBox(width: 8),
-                _buildModePill(
-                  label: 'Prompt Skill',
-                  icon: LucideIcons.sparkles,
-                  isSelected: false,
-                ),
-                const Spacer(),
-                const Text(
-                  '4 Free AI Models',
-                  style: TextStyle(
-                    color: AppTheme.textMuted,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
+                Expanded(
+                  child: _ModePill(
+                    label: 'Prompt Skill',
+                    icon: LucideIcons.sparkles,
+                    isSelected: false,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 10),
-
-            // Text Input Box with Action Buttons
             Container(
               decoration: BoxDecoration(
                 color: AppTheme.card,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppTheme.border),
+                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                border: Border.all(color: AppTheme.borderStrong),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              padding: const EdgeInsets.fromLTRB(16, 6, 8, 6),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Expanded(
                     child: TextField(
                       controller: _controller,
-                      maxLines: 4,
+                      maxLines: 5,
                       minLines: 1,
+                      cursorColor: AppTheme.primaryLight,
+                      textInputAction: TextInputAction.send,
                       style: const TextStyle(
                         color: AppTheme.textPrimary,
-                        fontSize: 13.5,
+                        fontSize: 14.5,
+                        height: 1.35,
                       ),
                       decoration: const InputDecoration(
-                        hintText: 'Ask anything to the 4-agent council...',
+                        hintText: 'Ask the council anything…',
                         hintStyle: TextStyle(
                           color: AppTheme.textMuted,
-                          fontSize: 13,
+                          fontSize: 14.5,
                         ),
                         border: InputBorder.none,
                         isDense: true,
-                        contentPadding: EdgeInsets.symmetric(vertical: 8),
+                        contentPadding: EdgeInsets.symmetric(vertical: 10),
                       ),
                       onSubmitted: (_) => _handleSend(),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Send or Generating Spinner Button
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: InkWell(
-                      onTap: widget.isGenerating ? null : _handleSend,
-                      borderRadius: BorderRadius.circular(10),
-                      child: Container(
-                        width: 34,
-                        height: 34,
-                        decoration: BoxDecoration(
-                          color: widget.isGenerating
-                              ? const Color(0xFF1E212D)
-                              : AppTheme.primary,
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: widget.isGenerating
-                              ? null
-                              : [
-                                  BoxShadow(
-                                    color: AppTheme.primary.withValues(
-                                      alpha: 0.4,
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Material(
+                      color: canSend
+                          ? AppTheme.primary
+                          : widget.isGenerating
+                              ? AppTheme.surfaceHigh
+                              : AppTheme.input,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                      child: InkWell(
+                        onTap: canSend ? _handleSend : null,
+                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                        child: SizedBox(
+                          width: 40,
+                          height: 40,
+                          child: Center(
+                            child: widget.isGenerating
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: AppTheme.primaryLight,
                                     ),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
+                                  )
+                                : Icon(
+                                    LucideIcons.arrowUp,
+                                    size: 18,
+                                    color: canSend
+                                        ? Colors.white
+                                        : AppTheme.textMuted,
                                   ),
-                                ],
+                          ),
                         ),
-                        alignment: Alignment.center,
-                        child: widget.isGenerating
-                            ? const SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    AppTheme.primaryLight,
-                                  ),
-                                ),
-                              )
-                            : const Icon(
-                                LucideIcons.arrowUp,
-                                color: Colors.white,
-                                size: 16,
-                              ),
                       ),
                     ),
                   ),
@@ -162,40 +161,52 @@ class _ChatInputBarState extends State<ChatInputBar> {
       ),
     );
   }
+}
 
-  Widget _buildModePill({
-    required String label,
-    required IconData icon,
-    required bool isSelected,
-  }) {
+class _ModePill extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+
+  const _ModePill({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = isSelected ? AppTheme.accentForeground : AppTheme.textSecondary;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: isSelected ? AppTheme.accent : const Color(0xFF141418),
-        borderRadius: BorderRadius.circular(20),
+        color: isSelected ? AppTheme.accent : AppTheme.card,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         border: Border.all(
           color: isSelected
-              ? AppTheme.primary.withValues(alpha: 0.4)
+              ? AppTheme.tint(AppTheme.primary, 0.55)
               : AppTheme.border,
         ),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             icon,
-            size: 12,
+            size: 14,
             color: isSelected ? AppTheme.primaryLight : AppTheme.textMuted,
           ),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: TextStyle(
-              color: isSelected
-                  ? AppTheme.accentForeground
-                  : AppTheme.textSecondary,
-              fontSize: 10.5,
-              fontWeight: FontWeight.w600,
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: fg,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],

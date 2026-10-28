@@ -15,210 +15,229 @@ class HistoryDrawer extends ConsumerWidget {
 
     return Drawer(
       backgroundColor: AppTheme.sidebar,
+      width: 300,
       child: SafeArea(
         child: Column(
           children: [
-            // Brand & New Chat Header
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
               child: Column(
                 children: [
                   Row(
                     children: [
                       Container(
-                        width: 26,
-                        height: 26,
+                        width: 32,
+                        height: 32,
                         decoration: BoxDecoration(
                           color: AppTheme.primary,
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.radiusSm + 2),
                         ),
-                        alignment: Alignment.center,
-                        child: const Icon(
-                          LucideIcons.brain,
-                          size: 16,
-                          color: Colors.white,
-                        ),
+                        child: const Icon(LucideIcons.brain,
+                            size: 18, color: Colors.white),
                       ),
-                      const SizedBox(width: 10),
-                      const Text(
-                        'TRA',
-                        style: TextStyle(
-                          color: AppTheme.textPrimary,
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -0.3,
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'TRA',
+                          style: TextStyle(
+                            color: AppTheme.textPrimary,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.4,
+                          ),
                         ),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(
-                          LucideIcons.edit3,
-                          size: 17,
-                          color: AppTheme.textSecondary,
-                        ),
-                        onPressed: () {
-                          notifier.resetChat();
-                          Navigator.pop(context);
-                        },
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  // New Chat Button
-                  InkWell(
-                    onTap: () {
-                      notifier.resetChat();
-                      Navigator.pop(context);
-                    },
-                    borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primary,
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.primary.withValues(alpha: 0.3),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      alignment: Alignment.center,
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(LucideIcons.plus, size: 15, color: Colors.white),
-                          SizedBox(width: 8),
-                          Text(
-                            'New Deliberation',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                  const SizedBox(height: 16),
+                  Material(
+                    color: AppTheme.primary,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    child: InkWell(
+                      onTap: () {
+                        notifier.resetChat();
+                        Navigator.pop(context);
+                      },
+                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                      child: const SizedBox(
+                        width: double.infinity,
+                        height: 44,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(LucideIcons.plus,
+                                size: 16, color: Colors.white),
+                            SizedBox(width: 8),
+                            Text(
+                              'New deliberation',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            const Divider(color: AppTheme.border, height: 1),
-
-            // Threads List
+            const Divider(height: 1),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'RECENT',
+                  style: TextStyle(
+                    color: AppTheme.textMuted,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ),
+            ),
             Expanded(
               child: chatState.threads.isEmpty
                   ? const Center(
-                      child: Text(
-                        'No previous sessions',
-                        style: TextStyle(
-                          color: AppTheme.textMuted,
-                          fontSize: 12,
-                        ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(LucideIcons.messagesSquare,
+                              size: 24, color: AppTheme.textMuted),
+                          SizedBox(height: 10),
+                          Text(
+                            'No previous sessions',
+                            style: TextStyle(
+                              color: AppTheme.textMuted,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                        ],
                       ),
                     )
                   : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
                       itemCount: chatState.threads.length,
                       itemBuilder: (context, index) {
                         final thread = chatState.threads[index];
                         final isSelected =
                             thread.id == chatState.activeThreadId;
 
-                        return Container(
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Material(
                             color: isSelected
                                 ? AppTheme.accent
                                 : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: isSelected
-                                  ? AppTheme.primary.withValues(alpha: 0.3)
-                                  : Colors.transparent,
-                            ),
-                          ),
-                          child: ListTile(
-                            dense: true,
-                            leading: Icon(
-                              LucideIcons.messageSquare,
-                              size: 14,
-                              color: isSelected
-                                  ? AppTheme.primaryLight
-                                  : AppTheme.textMuted,
-                            ),
-                            title: Text(
-                              thread.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: isSelected
-                                    ? AppTheme.accentForeground
-                                    : AppTheme.textSecondary,
-                                fontSize: 12.5,
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.w400,
+                            borderRadius:
+                                BorderRadius.circular(AppTheme.radiusMd),
+                            child: InkWell(
+                              borderRadius:
+                                  BorderRadius.circular(AppTheme.radiusMd),
+                              onTap: () {
+                                notifier.selectThread(thread.id);
+                                Navigator.pop(context);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 12),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(
+                                      AppTheme.radiusMd),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? AppTheme.tint(AppTheme.primary, 0.4)
+                                        : Colors.transparent,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      LucideIcons.messageSquare,
+                                      size: 15,
+                                      color: isSelected
+                                          ? AppTheme.primaryLight
+                                          : AppTheme.textMuted,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        thread.title,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: isSelected
+                                              ? AppTheme.accentForeground
+                                              : AppTheme.textSecondary,
+                                          fontSize: 13,
+                                          fontWeight: isSelected
+                                              ? FontWeight.w600
+                                              : FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                            onTap: () {
-                              notifier.selectThread(thread.id);
-                              Navigator.pop(context);
-                            },
                           ),
                         );
                       },
                     ),
             ),
-
-            // User Info Footer
-            const Divider(color: AppTheme.border, height: 1),
+            const Divider(height: 1),
             Padding(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
                   Container(
-                    width: 32,
-                    height: 32,
+                    width: 36,
+                    height: 36,
                     decoration: const BoxDecoration(
-                      color: Color(0xFF1E293B),
+                      color: AppTheme.surfaceHigh,
                       shape: BoxShape.circle,
                     ),
                     alignment: Alignment.center,
                     child: const Text(
                       'AK',
                       style: TextStyle(
-                        color: Color(0xFF93C5FD),
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryLight,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Abdullah',
-                        style: TextStyle(
-                          color: AppTheme.textPrimary,
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600,
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Abdullah',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppTheme.textPrimary,
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      Text(
-                        'Supabase • Drizzle ORM',
-                        style: TextStyle(
-                          color: AppTheme.textMuted,
-                          fontSize: 10.5,
+                        Text(
+                          'Supabase • Drizzle ORM',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppTheme.textMuted,
+                            fontSize: 11,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),

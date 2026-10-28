@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 import '../models/multi_agent_turn.dart';
 import '../theme/app_theme.dart';
 
@@ -18,51 +19,65 @@ class _PromptSkillInspectorState extends State<PromptSkillInspector> {
   @override
   Widget build(BuildContext context) {
     final opt = widget.optimization;
+    final techniques = opt.appliedTechniques;
+    final summary = techniques.take(2).join(', ') +
+        (techniques.length > 2 ? ' +${techniques.length - 2}' : '');
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0E1017),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF232736)),
+        color: AppTheme.card,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        border: Border.all(color: AppTheme.border),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           InkWell(
             onTap: () => setState(() => _expanded = !_expanded),
-            borderRadius: BorderRadius.circular(12),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               child: Row(
                 children: [
                   Container(
-                    width: 7,
-                    height: 7,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF38BDF8),
-                      shape: BoxShape.circle,
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      color: AppTheme.tint(AppTheme.info, 0.14),
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                    child: const Icon(LucideIcons.wand,
+                        size: 13, color: AppTheme.info),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Prompt sharpened',
+                          style: TextStyle(
+                            color: AppTheme.textPrimary,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (summary.isNotEmpty)
+                          Text(
+                            summary,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppTheme.textMuted,
+                              fontSize: 11.5,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Text(
-                    'Prompt Engineering Skill Applied',
-                    style: TextStyle(
-                      color: Color(0xFF7DD3FC),
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '• ${opt.appliedTechniques.take(2).join(", ")}${opt.appliedTechniques.length > 2 ? " +${opt.appliedTechniques.length - 2}" : ""}',
-                    style: const TextStyle(
-                      color: AppTheme.textMuted,
-                      fontSize: 11,
-                    ),
-                  ),
-                  const Spacer(),
                   Icon(
                     _expanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
-                    size: 14,
+                    size: 16,
                     color: AppTheme.textMuted,
                   ),
                 ],
@@ -70,72 +85,78 @@ class _PromptSkillInspectorState extends State<PromptSkillInspector> {
             ),
           ),
           if (_expanded) ...[
-            const Divider(color: Color(0xFF1E212E), height: 1),
+            const Divider(height: 1),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'ENFORCED REASONING TECHNIQUES',
-                    style: TextStyle(
-                      color: AppTheme.textSecondary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
+                  const _SectionLabel('Reasoning techniques'),
+                  const SizedBox(height: 8),
                   Wrap(
                     spacing: 6,
                     runSpacing: 6,
-                    children: opt.appliedTechniques
+                    children: techniques
                         .map(
                           (t) => Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 9, vertical: 4),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF132238),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: const Color(0xFF1E3A5F)),
+                              color: AppTheme.tint(AppTheme.info, 0.10),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                  color: AppTheme.tint(AppTheme.info, 0.3)),
                             ),
-                            child: Text(
-                              '✓ $t',
-                              style: const TextStyle(
-                                color: Color(0xFF38BDF8),
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w500,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(LucideIcons.check,
+                                    size: 11, color: AppTheme.info),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    t,
+                                    style: const TextStyle(
+                                      color: AppTheme.info,
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         )
                         .toList(),
                   ),
                   if (opt.constraintsAdded.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    const Text(
-                      'GUARDRAILS & NEGATIVE CONSTRAINTS',
-                      style: TextStyle(
-                        color: AppTheme.textSecondary,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 16),
+                    const _SectionLabel('Guardrails'),
+                    const SizedBox(height: 8),
                     ...opt.constraintsAdded.map(
                       (c) => Padding(
-                        padding: const EdgeInsets.only(bottom: 3),
+                        padding: const EdgeInsets.only(bottom: 5),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('• ', style: TextStyle(color: Color(0xFF38BDF8))),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6, right: 8),
+                              child: Container(
+                                width: 4,
+                                height: 4,
+                                decoration: const BoxDecoration(
+                                  color: AppTheme.info,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
                             Expanded(
                               child: Text(
                                 c,
                                 style: const TextStyle(
-                                  color: Color(0xFFCBD5E1),
-                                  fontSize: 11,
-                                  height: 1.3,
+                                  color: Color(0xFFD4D4D8),
+                                  fontSize: 12.5,
+                                  height: 1.4,
                                 ),
                               ),
                             ),
@@ -144,32 +165,24 @@ class _PromptSkillInspectorState extends State<PromptSkillInspector> {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 12),
-                  const Text(
-                    'OPTIMIZED PROMPT DISPATCHED TO 4 MODELS',
-                    style: TextStyle(
-                      color: AppTheme.textSecondary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 16),
+                  const _SectionLabel('Prompt sent to the 4 models'),
+                  const SizedBox(height: 8),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF090A0F),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFF222638)),
+                      color: AppTheme.background,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusSm + 2),
+                      border: Border.all(color: AppTheme.border),
                     ),
-                    child: Text(
+                    child: SelectableText(
                       opt.optimizedPrompt,
                       style: const TextStyle(
                         fontFamily: 'monospace',
-                        color: Color(0xFFA5B4FC),
-                        fontSize: 10.5,
-                        height: 1.35,
+                        color: AppTheme.primaryLight,
+                        fontSize: 11.5,
+                        height: 1.5,
                       ),
                     ),
                   ),
@@ -178,6 +191,24 @@ class _PromptSkillInspectorState extends State<PromptSkillInspector> {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text.toUpperCase(),
+      style: const TextStyle(
+        color: AppTheme.textMuted,
+        fontSize: 10.5,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.1,
       ),
     );
   }
