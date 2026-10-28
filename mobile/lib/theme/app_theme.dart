@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// TRA design system.
+/// Design system.
 ///
 /// Flat, layered dark surfaces. Depth is created only with solid fills and
 /// hairline borders — no gradients and no glow/blur shadows anywhere.

@@ -1,12 +1,12 @@
 /**
- * Prompt Engineering Skill Engine
+ * Prompt Engineering & Transformation Skill Engine
  * 
  * Codifies proven prompt engineering techniques:
  * 1. Persona & Role Framing
  * 2. Task Decomposition
  * 3. Chain-of-Thought (CoT) Elicitation
  * 4. Explicit Guardrails & Negative Constraints
- * 5. Structural Delimiters (<task>, <constraints>, <guidelines>)
+ * 5. Structural Delimiters (<objective>, <task>, <constraints>, <execution_protocol>)
  */
 
 export interface PromptOptimizationResult {
@@ -30,11 +30,11 @@ You MUST apply the following techniques:
 
 Respond strictly in valid JSON matching this schema:
 {
-  "intentSummary": "Brief 1-sentence synopsis of what the user seeks",
-  "appliedTechniques": ["Chain-of-Thought", "Task Decomposition", "Role Framing", "Constraint Guardrails", "Delimiter Tagging"],
-  "constraintsAdded": ["Specific boundary 1", "Specific boundary 2"],
-  "reasoningFramework": "Step-by-step logic framework introduced",
-  "optimizedPrompt": "The full, high-fidelity optimized prompt text"
+  \"intentSummary\": \"Brief 1-sentence synopsis of what the user seeks\",
+  \"appliedTechniques\": [\"Chain-of-Thought\", \"Task Decomposition\", \"Role Framing\", \"Constraint Guardrails\", \"Delimiter Tagging\"],
+  \"constraintsAdded\": [\"Specific boundary 1\", \"Specific boundary 2\"],
+  \"reasoningFramework\": \"Step-by-step logic framework introduced\",
+  \"optimizedPrompt\": \"The full, high-fidelity optimized prompt text\"
 }`;
 
 /**
@@ -48,7 +48,7 @@ export async function optimizePromptWithModel(
 ): Promise<{ optimizedPrompt: string; summary: string }> {
   const token = apiKey || process.env.OPENROUTER_API_KEY;
   if (!token) {
-    return createAgentSpecificAlgorithmicOptimization(rawPrompt, modelName);
+    return createAgentSpecificAlgorithmicOptimization(rawPrompt, modelName, modelId);
   }
 
   try {
@@ -69,13 +69,13 @@ export async function optimizePromptWithModel(
           },
           {
             role: "user",
-            content: `Optimize and sharpen this prompt for another AI model:\\n\\n\"\"\"${rawPrompt}\"\"\"`,
+            content: `Optimize and sharpen this prompt for another AI model:\n\n"""${rawPrompt}"""`,
           },
         ],
         temperature: 0.2,
         max_tokens: 700,
       }),
-      signal: AbortSignal.timeout(9000),
+      signal: AbortSignal.timeout(6000),
     });
 
     if (response.ok) {
@@ -89,35 +89,78 @@ export async function optimizePromptWithModel(
       }
     }
   } catch {
-    // Fall back to agent-specific algorithmic optimization
+    // Gracefully fall back to agent-specific algorithmic optimization
   }
 
-  return createAgentSpecificAlgorithmicOptimization(rawPrompt, modelName);
+  return createAgentSpecificAlgorithmicOptimization(rawPrompt, modelName, modelId);
 }
 
+/**
+ * Creates distinct, high-fidelity prompt optimizations tailored to each model's specific strength.
+ */
 export function createAgentSpecificAlgorithmicOptimization(
   rawPrompt: string,
-  modelName: string
+  modelName: string,
+  modelId?: string
 ): { optimizedPrompt: string; summary: string } {
   const trimmed = rawPrompt.trim();
+  const lower = trimmed.toLowerCase();
+
+  let roleContext = "Principal AI Analyst";
+  let specificDirective = "";
+
+  if (modelId?.includes("north-mini") || modelName.toLowerCase().includes("cohere")) {
+    roleContext = "Lead Systems Architect & Code Engineer";
+    specificDirective = `
+### [ARCHITECTURAL PROTOCOL]
+1. Dissect requirements into concrete functional specifications and implementation layers.
+2. Outline algorithmic complexity, data structures, and state management where applicable.
+3. Explicitly enumerate edge cases, concurrency hazards, or input boundary validations.
+4. Provide idiomatic, production-grade examples with syntax annotations.`;
+  } else if (modelId?.includes("ultra") || modelName.toLowerCase().includes("ultra")) {
+    roleContext = "Frontier Cognitive Synthesizer & Strategic Analyst";
+    specificDirective = `
+### [STRATEGIC & HOLISTIC PROTOCOL]
+1. Map the broader context, core trade-offs, and implicit assumptions of the inquiry.
+2. Formulate a multi-dimensional analysis with rigorous comparative criteria.
+3. Address second-order effects, failure scenarios, and long-term implications.
+4. Conclude with an actionable, synthesized blueprint.`;
+  } else {
+    // Nemotron Lightning or default Frontier Reasoner
+    roleContext = "Senior Formal Reasoner & Logic Auditor";
+    specificDirective = `
+### [DEDUCTIVE REASONING PROTOCOL]
+1. Establish initial conditions, definitions, and mathematical/formal foundations.
+2. Apply strict Chain-of-Thought (CoT): demonstrate each deductive leap step-by-step.
+3. Validate against potential counterexamples, logical paradoxes, and boundary states.
+4. Deliver a definitive, factually verifiable conclusion.`;
+  }
+
   const optimizedPrompt = `### [OPTIMIZED DIRECTIVE — PREPARED BY ${modelName.toUpperCase()}]
 <objective>
-Execute the following user request with rigorous accuracy, verified logical deductions, and no hallucination.
+Execute the user's objective with formal precision, verified logic, and zero hallucination.
 </objective>
+
+<role>
+You are acting as a ${roleContext}.
+</role>
 
 <user_task>
 ${trimmed}
 </user_task>
 
-### [EXECUTION PROTOCOL]
-1. Deconstruct core requirements and address implicit assumptions.
-2. Provide step-by-step reasoning (Chain-of-Thought) before the final conclusion.
-3. Validate boundary conditions, potential edge cases, and failure modes.
-4. Conclude with a definitive, clean, and actionable output.`;
+<execution_protocol>${specificDirective}
+</execution_protocol>
+
+<constraints>
+- Strict factual adherence; explicitly state any unavoidable assumptions.
+- Provide step-by-step reasoning before concluding.
+- Structure output using clean Markdown headers, bullet points, and code blocks where applicable.
+</constraints>`;
 
   return {
     optimizedPrompt,
-    summary: `Sharpened with CoT and edge-case guardrails by ${modelName}`,
+    summary: `Engineered with ${roleContext} framing and CoT verification by ${modelName}`,
   };
 }
 
@@ -156,7 +199,7 @@ export async function optimizeUserPrompt(
             temperature: 0.2,
             max_tokens: 1000,
           }),
-          signal: AbortSignal.timeout(8000),
+          signal: AbortSignal.timeout(6000),
         });
 
         if (!response.ok) continue;

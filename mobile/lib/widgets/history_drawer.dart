@@ -6,7 +6,9 @@ import '../providers/chat_provider.dart';
 import '../theme/app_theme.dart';
 
 class HistoryDrawer extends ConsumerWidget {
-  const HistoryDrawer({super.key});
+  final VoidCallback? onLogout;
+
+  const HistoryDrawer({super.key, this.onLogout});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -15,7 +17,7 @@ class HistoryDrawer extends ConsumerWidget {
 
     return Drawer(
       backgroundColor: AppTheme.sidebar,
-      width: 300,
+      width: 290,
       child: SafeArea(
         child: Column(
           children: [
@@ -39,18 +41,20 @@ class HistoryDrawer extends ConsumerWidget {
                       const SizedBox(width: 12),
                       const Expanded(
                         child: Text(
-                          'TRA',
+                          'Multi-Agent Council',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: AppTheme.textPrimary,
-                            fontSize: 19,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.4,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.3,
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   Material(
                     color: AppTheme.primary,
                     borderRadius: BorderRadius.circular(AppTheme.radiusMd),
@@ -62,7 +66,7 @@ class HistoryDrawer extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                       child: const SizedBox(
                         width: double.infinity,
-                        height: 44,
+                        height: 42,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -70,10 +74,10 @@ class HistoryDrawer extends ConsumerWidget {
                                 size: 16, color: Colors.white),
                             SizedBox(width: 8),
                             Text(
-                              'New deliberation',
+                              'New Session',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 13.5,
+                                fontSize: 13,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -87,16 +91,16 @@ class HistoryDrawer extends ConsumerWidget {
             ),
             const Divider(height: 1),
             const Padding(
-              padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+              padding: EdgeInsets.fromLTRB(18, 14, 18, 6),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'RECENT',
+                  'RECENT SESSIONS',
                   style: TextStyle(
                     color: AppTheme.textMuted,
-                    fontSize: 10.5,
+                    fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
+                    letterSpacing: 1.1,
                   ),
                 ),
               ),
@@ -108,13 +112,13 @@ class HistoryDrawer extends ConsumerWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(LucideIcons.messagesSquare,
-                              size: 24, color: AppTheme.textMuted),
-                          SizedBox(height: 10),
+                              size: 22, color: AppTheme.textMuted),
+                          SizedBox(height: 8),
                           Text(
                             'No previous sessions',
                             style: TextStyle(
                               color: AppTheme.textMuted,
-                              fontSize: 12.5,
+                              fontSize: 12,
                             ),
                           ),
                         ],
@@ -145,7 +149,7 @@ class HistoryDrawer extends ConsumerWidget {
                               },
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 12),
+                                    horizontal: 12, vertical: 10),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(
                                       AppTheme.radiusMd),
@@ -159,12 +163,12 @@ class HistoryDrawer extends ConsumerWidget {
                                   children: [
                                     Icon(
                                       LucideIcons.messageSquare,
-                                      size: 15,
+                                      size: 14,
                                       color: isSelected
                                           ? AppTheme.primaryLight
                                           : AppTheme.textMuted,
                                     ),
-                                    const SizedBox(width: 12),
+                                    const SizedBox(width: 10),
                                     Expanded(
                                       child: Text(
                                         thread.title,
@@ -174,7 +178,7 @@ class HistoryDrawer extends ConsumerWidget {
                                           color: isSelected
                                               ? AppTheme.accentForeground
                                               : AppTheme.textSecondary,
-                                          fontSize: 13,
+                                          fontSize: 12.5,
                                           fontWeight: isSelected
                                               ? FontWeight.w600
                                               : FontWeight.w500,
@@ -192,19 +196,19 @@ class HistoryDrawer extends ConsumerWidget {
             ),
             const Divider(height: 1),
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(14),
               child: Row(
                 children: [
                   Container(
-                    width: 36,
-                    height: 36,
+                    width: 34,
+                    height: 34,
                     decoration: const BoxDecoration(
                       color: AppTheme.surfaceHigh,
                       shape: BoxShape.circle,
                     ),
                     alignment: Alignment.center,
                     child: const Text(
-                      'AK',
+                      'U',
                       style: TextStyle(
                         color: AppTheme.primaryLight,
                         fontSize: 12,
@@ -212,28 +216,28 @@ class HistoryDrawer extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   const Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Abdullah',
+                          'Signed in user',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: AppTheme.textPrimary,
-                            fontSize: 13.5,
+                            fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         Text(
-                          'Supabase • Drizzle ORM',
+                          '3 Free Active AI Models',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: AppTheme.textMuted,
-                            fontSize: 11,
+                            fontSize: 10.5,
                           ),
                         ),
                       ],

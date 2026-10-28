@@ -19,7 +19,11 @@ class ChatState {
   final PipelineStage activeStage;
   final String stageMessage;
   final String? error;
-  final Map<String, String> activeViews; // turnId -> active view ('consensus', 'all_models', agentId, 'debate')
+  final Map<String, String> activeViews; // turnId -> active view ('all_models' or agentId)
+
+  /// The prompt currently being processed (shown as a user bubble with a
+  /// typing indicator until the answer arrives).
+  final String? pendingPrompt;
 
   ChatState({
     required this.turns,
@@ -29,6 +33,7 @@ class ChatState {
     required this.stageMessage,
     this.error,
     required this.activeViews,
+    this.pendingPrompt,
   });
 
   factory ChatState.initial() => ChatState(
@@ -49,6 +54,8 @@ class ChatState {
     String? stageMessage,
     String? error,
     Map<String, String>? activeViews,
+    String? pendingPrompt,
+    bool clearPendingPrompt = false,
   }) {
     return ChatState(
       turns: turns ?? this.turns,
@@ -58,6 +65,8 @@ class ChatState {
       stageMessage: stageMessage ?? this.stageMessage,
       error: error,
       activeViews: activeViews ?? this.activeViews,
+      pendingPrompt:
+          clearPendingPrompt ? null : (pendingPrompt ?? this.pendingPrompt),
     );
   }
 }
@@ -101,7 +110,7 @@ class ChatNotifier extends Notifier<ChatState> {
       final turns = await _apiService.fetchThreadMessages(threadId);
       final views = <String, String>{};
       for (final t in turns) {
-        views[t.turnId] = 'consensus';
+        views[t.turnId] = 'all_models';
       }
       state = state.copyWith(turns: turns, activeViews: views);
     } catch (e) {
@@ -122,33 +131,16 @@ class ChatNotifier extends Notifier<ChatState> {
     final currentThread = state.activeThreadId;
     state = state.copyWith(
       activeStage: PipelineStage.optimizing,
-      stageMessage: 'Models sharpening each other\'s prompts...',
+      stageMessage: 'Refining your prompt...',
+      pendingPrompt: trimmed,
       error: null,
     );
 
-    Future.delayed(const Duration(milliseconds: 1400), () {
+    Future.delayed(const Duration(milliseconds: 1200), () {
       if (state.activeStage == PipelineStage.optimizing) {
         state = state.copyWith(
           activeStage: PipelineStage.queryingAgents,
-          stageMessage: 'Executing peer-crafted directives across 4 models...',
-        );
-      }
-    });
-
-    Future.delayed(const Duration(milliseconds: 4000), () {
-      if (state.activeStage == PipelineStage.queryingAgents) {
-        state = state.copyWith(
-          activeStage: PipelineStage.interAgentDebate,
-          stageMessage: 'Cross-model debate, examination & scoring...',
-        );
-      }
-    });
-
-    Future.delayed(const Duration(milliseconds: 7000), () {
-      if (state.activeStage == PipelineStage.interAgentDebate) {
-        state = state.copyWith(
-          activeStage: PipelineStage.synthesizing,
-          stageMessage: 'Synthesizing verified consensus answer...',
+          stageMessage: 'Passing it to multiple agents...',
         );
       }
     });
@@ -161,22 +153,24 @@ class ChatNotifier extends Notifier<ChatState> {
 
       final updatedTurns = [...state.turns, turn];
       final updatedViews = Map<String, String>.from(state.activeViews);
-      updatedViews[turn.turnId] = 'consensus'; // Default to consensus best answer
+      updatedViews[turn.turnId] = 'all_models';
 
       state = state.copyWith(
         turns: updatedTurns,
         activeViews: updatedViews,
         activeStage: PipelineStage.complete,
-        stageMessage: 'Verified consensus established!',
+        stageMessage: '',
         activeThreadId: turn.threadId,
+        clearPendingPrompt: true,
       );
 
       loadThreads();
     } catch (e) {
       state = state.copyWith(
         activeStage: PipelineStage.error,
-        stageMessage: 'Processing interrupted',
+        stageMessage: '',
         error: e.toString().replaceAll('Exception: ', ''),
+        clearPendingPrompt: true,
       );
     }
   }
@@ -188,6 +182,7 @@ class ChatNotifier extends Notifier<ChatState> {
       activeStage: PipelineStage.idle,
       stageMessage: '',
       error: null,
+      clearPendingPrompt: true,
     );
   }
 }

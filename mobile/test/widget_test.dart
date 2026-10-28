@@ -6,11 +6,10 @@ void main() {
   testWidgets('App renders correctly', (WidgetTester tester) async {
     await tester.pumpWidget(
       const ProviderScope(
-        child: TramobileApp(),
+        child: CouncilApp(),
       ),
     );
 
-    expect(find.text('TRA'), findsOneWidget);
     expect(find.text('Multi-Agent Council'), findsOneWidget);
   });
 }

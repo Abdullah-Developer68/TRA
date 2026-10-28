@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tra_mobile/models/multi_agent_turn.dart';
-import 'package:tra_mobile/providers/chat_provider.dart';
 import 'package:tra_mobile/theme/app_theme.dart';
 import 'package:tra_mobile/widgets/chat_input_bar.dart';
 import 'package:tra_mobile/widgets/multi_agent_turn_card.dart';
-import 'package:tra_mobile/widgets/pipeline_stepper.dart';
+import 'package:tra_mobile/widgets/typing_indicator.dart';
 
 void main() {
   final sampleTurn = MultiAgentTurn(
@@ -66,18 +65,13 @@ void main() {
   );
 
   for (final width in [320.0, 360.0, 411.0]) {
-    testWidgets('pipeline stepper + input bar do not overflow at ${width}px',
+    testWidgets('typing bubble + composer do not overflow at ${width}px',
         (tester) async {
       tester.view.physicalSize = Size(width, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
 
-      for (final stage in [
-        PipelineStage.optimizing,
-        PipelineStage.queryingAgents,
-        PipelineStage.interAgentDebate,
-        PipelineStage.synthesizing,
-      ]) {
+      for (final hero in [false, true]) {
         await tester.pumpWidget(
           MaterialApp(
             theme: AppTheme.darkTheme,
@@ -89,19 +83,30 @@ void main() {
             home: Scaffold(
               body: Column(
                 children: [
-                  PipelineStepper(
-                    stage: stage,
-                    stageMessage:
-                        'Synthesizing verified Rank 1 Consensus Solution...',
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: PendingTurn(
+                      prompt: 'Explain the difference between TCP and UDP '
+                          'with a real-world scenario',
+                    ),
                   ),
                   const Spacer(),
-                  ChatInputBar(onSend: (_) {}, isGenerating: false),
+                  ChatInputBar(
+                    onSend: (_) {},
+                    isGenerating: !hero,
+                    hero: hero,
+                  ),
                 ],
               ),
             ),
           ),
         );
+        await tester.pump(const Duration(milliseconds: 400));
         expect(tester.takeException(), isNull);
+        expect(
+          find.text('Refining your prompt and passing it to multiple agents'),
+          findsOneWidget,
+        );
       }
     });
 

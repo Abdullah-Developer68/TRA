@@ -9,12 +9,15 @@ const router = Router();
 // Multi-agent execution route
 router.post("/multi-agent", async (req: Request, res: Response) => {
   try {
-    const { prompt, threadId } = req.body;
+    const { prompt, threadId, apiKey } = req.body;
+    const headerKey = req.headers["x-openrouter-key"] as string | undefined;
+    const effectiveKey = apiKey || headerKey;
+
     if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
       return res.status(400).json({ error: "Prompt must be a non-empty string." });
     }
 
-    const result = await runMultiAgentPipeline(prompt.trim(), threadId);
+    const result = await runMultiAgentPipeline(prompt.trim(), threadId, effectiveKey);
     return res.json(result);
   } catch (error: any) {
     console.error("Multi-agent route error:", error);
